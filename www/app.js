@@ -1,61 +1,67 @@
 /* =========================================================
-   CalcX — ядро калькулятора с системой плагинов
+   CalcX — ядро с системой плагинов API 3.0
    ========================================================= */
 (function(){
 'use strict';
 
-/* ---------- утилиты ---------- */
+/* =========================================================
+   КОНСТАНТЫ ЯДРА
+   ========================================================= */
+const API_VERSION = '3.0';
+
+/* =========================================================
+   УТИЛИТЫ
+   ========================================================= */
 const $ = s => document.querySelector(s);
 const $$ = s => Array.prototype.slice.call(document.querySelectorAll(s));
+
 const LS = {
   get(k, d){
-    try {
-      const v = localStorage.getItem('calc_' + k);
-      return v ? JSON.parse(v) : d;
-    } catch (e) { return d; }
+    try { const v = localStorage.getItem('calc_' + k); return v ? JSON.parse(v) : d; }
+    catch (e) { return d; }
   },
   set(k, v){
     try { localStorage.setItem('calc_' + k, JSON.stringify(v)); } catch (e) {}
-  }
+  },
+  del(k){ try { localStorage.removeItem('calc_' + k); } catch (e) {} }
 };
 
-/* ---------- состояние ---------- */
+const parseVer = v => String(v || '1.0').split('.').map(n => parseInt(n, 10) || 0);
+
+/* =========================================================
+   СОСТОЯНИЕ
+   ========================================================= */
 const S = Object.assign({
   mode: 'auto',
   hue: 'sys',
   vib: true,
   pow: 1,
-  anim: !matchMedia('(prefers-reduced-motion: reduce)').matches
+  anim: !matchMedia('(prefers-reduced-motion: reduce)').matches,
+  pluginTheme: null
 }, LS.get('s', {}));
 const saveS = () => LS.set('s', S);
+
 let PAL = null;
+let currentPage = 'calc';
 
 /* =========================================================
-   ВЕРСИЯ API ПЛАГИНОВ
-   MAJOR увеличивай при ломающих изменениях
-   MINOR — только при добавлении нового
+   ВИБРО
    ========================================================= */
-const API_VERSION = '2.0';
-
-/* ---------- вибро ---------- */
 const vib = m => {
   if (!S.vib) return false;
   const p = m || [8, 16, 28][S.pow] || 20;
   try {
     const N = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.NativeTools;
-    if (N) {
-      N.vibrate(Array.isArray(p) ? { pattern: p } : { duration: p }).catch(function(){});
-      return true;
-    }
+    if (N) { N.vibrate(Array.isArray(p) ? { pattern: p } : { duration: p }).catch(() => {}); return true; }
     if (navigator.vibrate) return navigator.vibrate(p);
   } catch (e) {}
   return false;
 };
-document.addEventListener('click', () => {
-  if (window._vf) { window._vf = 0; vib(); }
-});
+document.addEventListener('click', () => { if (window._vf) { window._vf = 0; vib(); } });
 
-/* ---------- тосты ---------- */
+/* =========================================================
+   ТОСТЫ
+   ========================================================= */
 let tt;
 const toast = m => {
   const t = $('#toast');
@@ -66,7 +72,7 @@ const toast = m => {
   tt = setTimeout(() => t.classList.remove('on'), 2200);
 };
 
-/* глобальный перехват ошибок — показываем тостом */
+/* глобальный перехват ошибок */
 window.addEventListener('error', e => {
   if (e && e.message && e.message !== 'Script error.') {
     try { toast('Ошибка: ' + e.message); } catch (x) {}
@@ -79,7 +85,9 @@ window.addEventListener('unhandledrejection', e => {
   } catch (x) {}
 });
 
-/* ---------- цвет системного акцента ---------- */
+/* =========================================================
+   ТЕМА
+   ========================================================= */
 function sysHue(){
   try {
     const d = document.createElement('div');
@@ -98,8 +106,8 @@ function sysHue(){
 }
 
 const HUES = [
-  ['sys','Системный'], [150,'Зелёный'], [210,'Синий'], [270,'Фиолетовый'],
-  [340,'Розовый'], [20,'Оранжевый'], [45,'Жёлтый']
+  ['sys','Системный'],[150,'Зелёный'],[210,'Синий'],[270,'Фиолетовый'],
+  [340,'Розовый'],[20,'Оранжевый'],[45,'Жёлтый']
 ];
 
 function palMap(d){
@@ -128,39 +136,43 @@ function applyTheme(){
     const t = h + 60;
 
     let p;
-    if (S.hue === 'sys' && PAL && PAL.a1_600) {
-      p = palMap(dark);
-    } else if (dark) {
-      p = {
-        bg: H(h,14,8), sf: H(h,14,13), sc: H(h,12,20),
-        pr: H(h,60,76), onpr: H(h,60,12),
-        pc: H(h,45,26), onpc: H(h,70,90),
-        tc: H(t,30,26), ontc: H(t,60,90),
-        tx: H(h,10,90), tx2: H(h,8,68), ol: H(h,8,32)
-      };
-    } else {
-      p = {
-        bg: H(h,30,97), sf: H(h,22,92), sc: H(h,20,86),
-        pr: H(h,55,36), onpr: '#fff',
-        pc: H(h,65,86), onpc: H(h,80,10),
-        tc: H(t,40,84), ontc: H(t,80,10),
-        tx: H(h,10,10), tx2: H(h,8,38), ol: H(h,10,80)
-      };
-    }
+    if (S.hue === 'sys' && PAL && PAL.a1_600) p = palMap(dark);
+    else if (dark) p = {
+      bg: H(h,14,8), sf: H(h,14,13), sc: H(h,12,20),
+      pr: H(h,60,76), onpr: H(h,60,12),
+      pc: H(h,45,26), onpc: H(h,70,90),
+      tc: H(t,30,26), ontc: H(t,60,90),
+      tx: H(h,10,90), tx2: H(h,8,68), ol: H(h,8,32)
+    };
+    else p = {
+      bg: H(h,30,97), sf: H(h,22,92), sc: H(h,20,86),
+      pr: H(h,55,36), onpr: '#fff',
+      pc: H(h,65,86), onpc: H(h,80,10),
+      tc: H(t,40,84), ontc: H(t,80,10),
+      tx: H(h,10,10), tx2: H(h,8,38), ol: H(h,10,80)
+    };
 
     const r = document.documentElement.style;
     for (const k in p) r.setProperty('--' + k, p[k]);
     r.colorScheme = dark ? 'dark' : 'light';
-
     const mt = document.querySelector('meta[name=theme-color]');
     if (mt) mt.content = p.bg;
-  } catch (e) {
-    console.error('applyTheme', e);
-  }
+
+    /* тема от плагина — накладывается поверх */
+    if (S.pluginTheme && THEMES[S.pluginTheme]) {
+      const t2 = THEMES[S.pluginTheme];
+      const vars = dark ? t2.dark : t2.light;
+      if (vars) for (const k in vars) r.setProperty('--' + k, vars[k]);
+    }
+
+    emit('theme:change', { dark });
+  } catch (e) { console.error('applyTheme', e); }
 }
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 
-/* ---------- математика ---------- */
+/* =========================================================
+   МАТЕМАТИКА
+   ========================================================= */
 const D = Math.PI / 180;
 const F = {
   sin: x => Math.sin(x * D),
@@ -172,6 +184,7 @@ const F = {
   '√': Math.sqrt,
   abs: Math.abs
 };
+const CONSTS = { pi: Math.PI, π: Math.PI, e: Math.E };
 
 function ev(s){
   const t = s.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-')
@@ -205,7 +218,7 @@ function ev(s){
     if (x == null) throw new Error('unexpected end');
     if (/^[\d.]/.test(x)) return parseFloat(x);
     if (x === '(') { const v = pe(); if (t[i] === ')') i++; return v; }
-    if (x === 'π' || x === 'pi') return Math.PI;
+    if (CONSTS[x] !== undefined) return CONSTS[x];
     if (F[x]) {
       if (t[i++] !== '(') throw new Error('need (');
       const v = pe();
@@ -228,7 +241,9 @@ const fmt = n => {
   return String(s).replace('-', '−');
 };
 
-/* ---------- калькулятор ---------- */
+/* =========================================================
+   КАЛЬКУЛЯТОР
+   ========================================================= */
 let expr = LS.get('ex', '');
 let done = false;
 let hist = LS.get('h', []);
@@ -252,28 +267,37 @@ function upd(){
     } catch (x) {}
   }
   rs.textContent = r;
+  emit('calc:change', { expr });
 }
 
 function ins(s){
-  if (done) {
-    expr = isOp(s[0]) || s === '%' ? expr : '';
-    done = false;
-  }
+  if (done) { expr = isOp(s[0]) || s === '%' ? expr : ''; done = false; }
   if (expr.length < 60) expr += s;
   upd();
 }
 
 function press(v){
+  /* даём плагинам перехватить */
+  const hook = { key: v, expr, cancel: false };
+  emit('calc:press', hook);
+  if (hook.cancel) return;
+
   if (v === 'AC') { expr = ''; done = false; }
   else if (v === '⌫') { expr = expr.replace(/(?:[a-z√]+\(|.)$/, ''); done = false; }
   else if (v === '=') {
     if (!expr) return;
     try {
       const r = fmt(ev(expr));
-      hist.unshift({ e: expr, r: r });
+      const resultEvent = { expr, result: r, cancel: false };
+      emit('calc:result', resultEvent);
+      if (resultEvent.cancel) return;
+      const finalExpr = resultEvent.expr;
+      const finalResult = resultEvent.result;
+
+      hist.unshift({ e: finalExpr, r: finalResult });
       hist = hist.slice(0, 50);
       LS.set('h', hist);
-      expr = r;
+      expr = finalResult;
       done = true;
       const rs = $('#rs');
       upd();
@@ -289,11 +313,7 @@ function press(v){
       return;
     } catch (e) {
       const d = $('#disp');
-      if (d) {
-        d.classList.remove('shake');
-        void d.offsetWidth;
-        d.classList.add('shake');
-      }
+      if (d) { d.classList.remove('shake'); void d.offsetWidth; d.classList.add('shake'); }
       vib([30, 40, 30]);
       return;
     }
@@ -306,11 +326,7 @@ function press(v){
   }
   else if (isOp(v)) {
     if (done) done = false;
-    if (!expr) {
-      if (v === '−') expr = '−';
-      upd();
-      return;
-    }
+    if (!expr) { if (v === '−') expr = '−'; upd(); return; }
     if (isOp(expr.slice(-1))) expr = expr.slice(0, -1);
     expr += v;
   }
@@ -357,20 +373,29 @@ if (keysEl) {
     if (!b || b.dataset.k !== '⌫') return;
     lpT = setTimeout(() => {
       window._lp = 1;
-      lpI = setInterval(() => {
-        if (!expr) return lpStop();
-        press('⌫');
-        vib(6);
-      }, 70);
+      lpI = setInterval(() => { if (!expr) return lpStop(); press('⌫'); vib(6); }, 70);
     }, 400);
   });
   ['pointerup','pointercancel','pointerleave'].forEach(n => keysEl.addEventListener(n, lpStop));
 }
 
-/* копирование результата */
+/* долгий тап по дисплею — контекстное меню результата */
 const dispEl = $('#disp');
 if (dispEl) {
-  dispEl.onclick = () => {
+  let holdT;
+  dispEl.addEventListener('pointerdown', e => {
+    holdT = setTimeout(() => {
+      const rs = $('#rs');
+      const result = done ? expr : (rs ? rs.textContent.replace('= ', '') : '');
+      if (!result) return;
+      showResultMenu(e.clientX, e.clientY, result);
+      vib([20, 30, 20]);
+    }, 500);
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(n =>
+    dispEl.addEventListener(n, () => clearTimeout(holdT))
+  );
+  dispEl.addEventListener('click', () => {
     const rs = $('#rs');
     const t = done ? expr : (rs ? rs.textContent.replace('= ', '') : '');
     if (!t) return;
@@ -380,7 +405,7 @@ if (dispEl) {
         () => toast('Копирование недоступно')
       );
     } catch (e) { toast('Копирование недоступно'); }
-  };
+  });
 }
 
 /* ripple-эффект */
@@ -411,13 +436,39 @@ document.addEventListener('keydown', e => {
   }
 });
 
-/* ---------- вкладки (ядро) ---------- */
+/* =========================================================
+   СИСТЕМА СОБЫТИЙ (шина)
+   ========================================================= */
+const EVENTS = {};
+function on(event, fn, pluginId){
+  if (!EVENTS[event]) EVENTS[event] = [];
+  EVENTS[event].push({ fn, pluginId: pluginId || null });
+  return () => off(event, fn);
+}
+function off(event, fn){
+  if (!EVENTS[event]) return;
+  EVENTS[event] = EVENTS[event].filter(x => x.fn !== fn);
+}
+function emit(event, data){
+  const list = EVENTS[event];
+  if (!list) return;
+  for (let i = 0; i < list.length; i++) {
+    try { list[i].fn(data); }
+    catch (e) { toast('Ошибка плагина: ' + e.message); }
+  }
+}
+
+/* =========================================================
+   ВКЛАДКИ
+   ========================================================= */
 const ICO = {
   calc: '<path d="M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2zm1 3v3h8V6H8zm0 6v2h2v-2H8zm4 0v2h2v-2h-2zm4 0v2h2v-2h-2zM8 16v2h2v-2H8zm4 0v2h2v-2h-2zm4 0v2h2v-2h-2z"/>',
   hist: '<path d="M12 3a9 9 0 100 18 9 9 0 000-18zm1 4v4.6l3.4 2-.8 1.4L11 12.4V7h2z"/>',
   plug: '<path d="M20.5 11H19V7a2 2 0 00-2-2h-4V3.5a2.5 2.5 0 00-5 0V5H4a2 2 0 00-2 2v3.8h1.5a2.7 2.7 0 010 5.4H2V20a2 2 0 002 2h3.8v-1.5a2.7 2.7 0 015.4 0V22H17a2 2 0 002-2v-4h1.5a2.5 2.5 0 000-5z"/>',
   set: '<path fill-rule="evenodd" d="M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zM19.4 13a7.7 7.7 0 000-2l2-1.6-2-3.4-2.4 1a7 7 0 00-1.7-1L15 3.5h-4l-.4 2.5a7 7 0 00-1.7 1l-2.4-1-2 3.4 2 1.6a7.7 7.7 0 000 2l-2 1.6 2 3.4 2.4-1a7 7 0 001.7 1l.4 2.5h4l.4-2.5a7 7 0 001.7-1l2.4 1 2-3.4z"/>'
 };
+
+const PAGES = {}; /* id -> { title, icon, render, onShow, onHide, tabEl, pageEl } */
 
 const navEl = $('#nav');
 if (navEl) {
@@ -432,44 +483,376 @@ if (navEl) {
 }
 
 function go(id){
+  if (currentPage === id) return;
+  const prev = PAGES[currentPage];
+  if (prev && prev.onHide) { try { prev.onHide(); } catch (e) {} }
+
   $$('.tab').forEach(t => t.classList.toggle('on', t.dataset.t === id));
   $$('.page').forEach(p => p.classList.toggle('on', p.id === 'p-' + id));
+  currentPage = id;
+
   if (id === 'hist') rHist();
   if (id === 'plug') rPlug();
+  const pg = PAGES[id];
+  if (pg && pg.onShow) { try { pg.onShow(); } catch (e) {} }
+  emit('page:open', { id });
 }
 
-/* ---------- история ---------- */
-function rHist(){
-  const h = $('#hist');
-  if (!h) return;
-  h.innerHTML = hist.length ? '' : '<div class="empty">Пока пусто</div>';
-  hist.forEach((x, i) => {
-    const d = document.createElement('div');
-    d.className = 'card hi';
-    d.style.animationDelay = i * 30 + 'ms';
-    d.innerHTML = '<small></small><b></b>';
-    d.children[0].textContent = x.e + ' =';
-    d.children[1].textContent = x.r;
-    d.onclick = () => {
-      expr = x.r;
-      done = true;
-      upd();
-      go('calc');
-    };
-    h.append(d);
-  });
-  if (hist.length) {
-    const c = document.createElement('button');
-    c.className = 'btn t';
-    c.style.width = '100%';
-    c.textContent = 'Очистить';
-    c.onclick = () => { hist = []; LS.set('h', hist); rHist(); };
-    h.append(c);
+function addPage(opts){
+  if (!opts || !opts.id) throw new Error('нужен id страницы');
+  if (PAGES[opts.id]) throw new Error('страница уже существует: ' + opts.id);
+
+  const pg = document.createElement('section');
+  pg.className = 'page';
+  pg.id = 'p-' + opts.id;
+  $('#main').append(pg);
+
+  const tab = document.createElement('button');
+  tab.className = 'tab';
+  tab.dataset.t = opts.id;
+  const icon = opts.icon || '<path d="M4 4h16v16H4z"/>';
+  tab.innerHTML = '<i><svg viewBox="0 0 24 24">' + icon + '</svg></i>' + (opts.title || opts.id);
+  tab.onclick = () => go(opts.id);
+  $('#nav').append(tab);
+
+  PAGES[opts.id] = {
+    title: opts.title, icon: opts.icon,
+    render: opts.render, onShow: opts.onShow, onHide: opts.onHide,
+    pageEl: pg, tabEl: tab, pluginId: opts._pluginId
+  };
+
+  if (typeof opts.render === 'function') {
+    try { opts.render(pg); } catch (e) { toast('Ошибка страницы: ' + e.message); }
   }
+  return opts.id;
+}
+
+function removePage(id){
+  const p = PAGES[id];
+  if (!p) return;
+  p.pageEl.remove();
+  p.tabEl.remove();
+  delete PAGES[id];
+  if (currentPage === id) go('calc');
 }
 
 /* =========================================================
-   СИСТЕМА ПЛАГИНОВ
+   ХРАНИЛИЩЕ ПЛАГИНА
+   ========================================================= */
+const STORE_KEY = 'plugin_store';
+const ALL_STORE = LS.get(STORE_KEY, {});
+
+function makeStore(pluginId){
+  if (!ALL_STORE[pluginId]) ALL_STORE[pluginId] = {};
+  const bucket = ALL_STORE[pluginId];
+  return {
+    get(k, d){ return bucket[k] !== undefined ? bucket[k] : d; },
+    set(k, v){ bucket[k] = v; LS.set(STORE_KEY, ALL_STORE); },
+    remove(k){ delete bucket[k]; LS.set(STORE_KEY, ALL_STORE); },
+    clear(){ ALL_STORE[pluginId] = {}; LS.set(STORE_KEY, ALL_STORE); },
+    keys(){ return Object.keys(bucket); },
+    all(){ return Object.assign({}, bucket); }
+  };
+}
+
+/* =========================================================
+   UI-КОМПОНЕНТЫ
+   ========================================================= */
+const UI = {
+  el(tag, props, children){
+    const e = document.createElement(tag);
+    if (props) for (const k in props) {
+      if (k === 'style' && typeof props[k] === 'object') Object.assign(e.style, props[k]);
+      else if (k === 'class') e.className = props[k];
+      else if (k === 'text') e.textContent = props[k];
+      else if (k === 'html') e.innerHTML = props[k];
+      else if (k.startsWith('on') && typeof props[k] === 'function') e['on' + k.slice(2).toLowerCase()] = props[k];
+      else e.setAttribute(k, props[k]);
+    }
+    if (children) {
+      (Array.isArray(children) ? children : [children]).forEach(c => {
+        if (c == null) return;
+        e.append(typeof c === 'string' ? document.createTextNode(c) : c);
+      });
+    }
+    return e;
+  },
+
+  card(opts){
+    const c = UI.el('div', { class: 'card' });
+    if (opts.title) c.append(UI.el('b', { text: opts.title }));
+    if (opts.hint) c.append(UI.el('small', { text: opts.hint }));
+    if (opts.content) c.append(opts.content);
+    return c;
+  },
+
+  button(opts){
+    const b = UI.el('button', {
+      class: 'btn ' + (opts.variant || ''),
+      text: opts.label || '',
+      onClick: opts.onClick || (() => {})
+    });
+    return b;
+  },
+
+  toggle(opts){
+    const wrap = UI.el('div', { class: 'row' });
+    const g = UI.el('div', { class: 'grow' });
+    g.append(UI.el('b', { text: opts.label || '' }));
+    if (opts.hint) g.append(UI.el('small', { text: opts.hint }));
+    wrap.append(g);
+
+    const lab = UI.el('label', { class: 'sw' });
+    const inp = UI.el('input', { type: 'checkbox' });
+    inp.checked = !!opts.value;
+    inp.onchange = () => opts.onChange && opts.onChange(inp.checked);
+    lab.append(inp, UI.el('i'));
+    wrap.append(lab);
+    return wrap;
+  },
+
+  input(opts){
+    const inp = UI.el('input', {
+      type: opts.type || 'text',
+      placeholder: opts.placeholder || ''
+    });
+    inp.value = opts.value != null ? opts.value : '';
+    inp.onchange = () => opts.onChange && opts.onChange(inp.value);
+    return inp;
+  },
+
+  select(opts){
+    const el = UI.el('div', { class: 'seg' });
+    (opts.options || []).forEach(o => {
+      const b = UI.el('button', { text: o.label || o.value });
+      b.dataset.v = o.value;
+      if (o.value === opts.value) b.classList.add('on');
+      b.onclick = () => {
+        Array.prototype.forEach.call(el.children, x => x.classList.remove('on'));
+        b.classList.add('on');
+        opts.onChange && opts.onChange(o.value);
+      };
+      el.append(b);
+    });
+    return el;
+  },
+
+  list(opts){
+    const wrap = UI.el('div');
+    (opts.items || []).forEach(item => {
+      const c = UI.el('div', { class: 'card hi' });
+      if (item.title) c.append(UI.el('b', { text: item.title }));
+      if (item.subtitle) c.append(UI.el('small', { text: item.subtitle }));
+      if (item.onClick) c.onclick = () => item.onClick(item);
+      wrap.append(c);
+    });
+    return wrap;
+  },
+
+  toast: toast,
+
+  modal(opts){
+    const back = UI.el('div', { class: 'modal-back' });
+    const m = UI.el('div', { class: 'modal' });
+    if (opts.title) m.append(UI.el('h2', { text: opts.title }));
+    if (opts.content) m.append(opts.content);
+
+    const actions = UI.el('div', { class: 'modal-actions' });
+    (opts.actions || [{ label: 'Закрыть', variant: 't' }]).forEach(a => {
+      const b = UI.el('button', {
+        class: 'btn ' + (a.variant || ''),
+        text: a.label || 'OK',
+        onClick: () => {
+          if (a.onClick) a.onClick();
+          if (a.close !== false) close();
+        }
+      });
+      actions.append(b);
+    });
+    m.append(actions);
+    back.append(m);
+
+    function close(){
+      back.classList.remove('on');
+      setTimeout(() => back.remove(), 300);
+    }
+    back.onclick = e => { if (e.target === back) close(); };
+    $('#plugin-modals').append(back);
+    requestAnimationFrame(() => back.classList.add('on'));
+    return { close, el: m };
+  },
+
+  overlay(text){
+    const ov = UI.el('div', { class: 'overlay-load' });
+    ov.append(UI.el('div', { class: 'spinner' }));
+    if (text) ov.append(UI.el('div', { text: text }));
+    $('#plugin-overlays').append(ov);
+    return () => ov.remove();
+  },
+
+  notify(opts){
+    const n = UI.el('div', { class: 'notif' });
+    if (opts.icon) n.append(UI.el('span', { text: opts.icon }));
+    n.append(UI.el('span', { text: opts.title || '' }));
+    if (opts.body) {
+      const b = UI.el('small', { text: opts.body });
+      b.style.marginLeft = '6px';
+      n.append(b);
+    }
+    $('#plugin-notifications').append(n);
+    requestAnimationFrame(() => n.classList.add('on'));
+    const ttl = opts.duration || 3000;
+    setTimeout(() => {
+      n.classList.remove('on');
+      setTimeout(() => n.remove(), 300);
+    }, ttl);
+  }
+};
+
+/* =========================================================
+   ТЕМЫ ПЛАГИНОВ
+   ========================================================= */
+const THEMES = LS.get('plugin_themes', {});
+function registerTheme(t){
+  if (!t || !t.id) throw new Error('нужен id темы');
+  THEMES[t.id] = t;
+  LS.set('plugin_themes', THEMES);
+  renderThemes();
+}
+function setTheme(id){
+  S.pluginTheme = id;
+  saveS();
+  applyTheme();
+  renderThemes();
+}
+function renderThemes(){
+  const wrap = $('#plugin-themes');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+
+  /* системная (без плагинной) */
+  const none = UI.el('button', { title: 'Без плагинной темы' });
+  none.style.background = 'var(--pc)';
+  none.style.color = 'var(--onpc)';
+  none.textContent = '×';
+  none.onclick = () => setTheme(null);
+  if (!S.pluginTheme) none.classList.add('on');
+  wrap.append(none);
+
+  Object.keys(THEMES).forEach(id => {
+    const t = THEMES[id];
+    const b = UI.el('button', { title: t.name || id });
+    const color = (t.light && t.light['--pr']) || (t.dark && t.dark['--pr']) || '#888';
+    b.style.background = color;
+    if (S.pluginTheme === id) b.classList.add('on');
+    b.onclick = () => setTheme(id);
+    wrap.append(b);
+  });
+}
+
+/* =========================================================
+   КОНТЕКСТНОЕ МЕНЮ РЕЗУЛЬТАТА
+   ========================================================= */
+const RESULT_ACTIONS = [];
+function addResultAction(a){
+  RESULT_ACTIONS.push(a);
+}
+function showResultMenu(x, y, result){
+  /* старое меню убираем */
+  $$('.ctx-menu').forEach(m => m.remove());
+
+  const menu = UI.el('div', { class: 'ctx-menu' });
+  const close = () => {
+    menu.classList.remove('on');
+    setTimeout(() => menu.remove(), 200);
+  };
+
+  /* базовые пункты */
+  const base = [
+    { label: '📋 Скопировать', onClick: () => {
+      navigator.clipboard.writeText(result.replace('−','-')).then(
+        () => toast('Скопировано'), () => toast('Не удалось')
+      );
+    } },
+    { label: '➡️ Перенести в поле', onClick: () => {
+      expr = result;
+      done = true;
+      upd();
+    } },
+    { label: '🗑 Очистить', onClick: () => {
+      expr = ''; done = false; upd();
+    } }
+  ];
+
+  base.concat(RESULT_ACTIONS).forEach(a => {
+    const b = UI.el('button', { text: a.label, onClick: () => { a.onClick(result); close(); } });
+    menu.append(b);
+  });
+
+  document.body.append(menu);
+  const rect = menu.getBoundingClientRect();
+  const maxX = window.innerWidth - rect.width - 8;
+  const maxY = window.innerHeight - rect.height - 8;
+  menu.style.left = Math.min(x, maxX) + 'px';
+  menu.style.top = Math.min(y, maxY) + 'px';
+  requestAnimationFrame(() => menu.classList.add('on'));
+
+  setTimeout(() => {
+    const off = (e) => {
+      if (!menu.contains(e.target)) { close(); document.removeEventListener('pointerdown', off); }
+    };
+    document.addEventListener('pointerdown', off);
+  }, 50);
+}
+
+/* =========================================================
+   CSS ОТ ПЛАГИНОВ
+   ========================================================= */
+function injectCSS(css){
+  const s = document.createElement('style');
+  s.dataset.pluginStyle = '1';
+  s.textContent = css;
+  document.head.append(s);
+  return () => s.remove();
+}
+
+/* =========================================================
+   СЕТЬ ЧЕРЕЗ ПРОКСИ
+   ========================================================= */
+const DEFAULT_PROXY = 'https://api.allorigins.win/raw?url=';
+async function netFetch(url, opts){
+  opts = opts || {};
+  const finalUrl = opts.proxy ? (opts.proxy + encodeURIComponent(url)) : url;
+  const r = await fetch(finalUrl, opts);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r;
+}
+async function netFetchJSON(url, opts){ return (await netFetch(url, opts)).json(); }
+async function netFetchText(url, opts){ return (await netFetch(url, opts)).text(); }
+
+/* =========================================================
+   ЗВУК
+   ========================================================= */
+function beep(freq, dur, type){
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.value = freq || 440;
+    g.gain.setValueAtTime(0.2, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (dur || 0.2));
+    osc.connect(g).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + (dur || 0.2));
+    setTimeout(() => ctx.close(), (dur || 0.2) * 1000 + 500);
+  } catch (e) {}
+}
+
+/* =========================================================
+   РЕГИСТРАЦИЯ ПЛАГИНОВ
    ========================================================= */
 const PL = {};
 const BUILTIN = new Set();
@@ -481,10 +864,9 @@ const getVals = id => PVALS[id] || (PVALS[id] = {});
 const saveVals = () => { LS.set('pvals', PVALS); };
 const PSUBS = {};
 
-const parseVer = v => String(v || '1.0').split('.').map(n => parseInt(n, 10) || 0);
-
 function registerPlugin(d, builtin){
   if (!d || !d.id) throw new Error('нужен id');
+
   const want = d.apiVersion || '1.0';
   const have = API_VERSION;
   const wmaj = parseVer(want)[0];
@@ -494,60 +876,161 @@ function registerPlugin(d, builtin){
   if (wmaj > hmaj) d._compat = 'too-new';
   else if (wmaj < hmaj) d._compat = 'legacy';
 
+  /* проверка зависимостей */
+  if (d.requires && d.requires.length) {
+    d._missing = d.requires.filter(r => !PL[r]);
+  }
+
   PL[d.id] = d;
   if (builtin) BUILTIN.add(d.id);
 }
 
-const api = id => ({
-  _id: id,
+/* =========================================================
+   API ПЛАГИНА
+   ========================================================= */
+const api = id => {
+  const store = makeStore(id);
+  const cssList = [];
+  const listeners = [];
 
-  addButton(o){
-    const extra = $('#extra');
-    if (!extra) return;
-    const b = document.createElement('button');
-    b.className = 'k fn chip';
-    b.textContent = o.label;
-    b.dataset.plugin = id;
-    b.onclick = () => {
-      try {
-        if (o.onClick) o.onClick(api(id));
-        else ins(o.insert || o.label);
-      } catch (e) { toast('Ошибка плагина: ' + e.message); }
-    };
-    extra.append(b);
-  },
+  const apiObj = {
+    _id: id,
 
-  addFunction(n, f){
-    if (!/^[a-z]+$/.test(n)) throw new Error('имя функции: только a-z');
-    F[n] = f;
-    (PL[id]._fn = PL[id]._fn || []).push(n);
-  },
+    /* --- метаданные --- */
+    id,
+    version: API_VERSION,
+    getApiVersion: () => API_VERSION,
+    getCompat: () => PL[id] ? PL[id]._compat : 'unknown',
 
-  insert: s => ins(s),
-  getExpr: () => expr,
-  getResult: () => { try { return ev(expr); } catch (e) { return NaN; } },
-  setExpr: s => { expr = String(s); done = false; upd(); },
-  vibrate: m => vib(m),
-  toast: toast,
+    /* --- кнопки --- */
+    addButton(o){
+      const extra = $('#extra');
+      if (!extra) return;
+      const b = document.createElement('button');
+      b.className = 'k fn chip';
+      b.textContent = o.label;
+      b.dataset.plugin = id;
+      b.onclick = () => {
+        try {
+          if (o.onClick) o.onClick(api(id));
+          else ins(o.insert || o.label);
+        } catch (e) { toast('Ошибка плагина: ' + e.message); }
+      };
+      extra.append(b);
+      return b;
+    },
 
-  getSetting(k){ return getVals(id)[k]; },
-  getAllSettings(){ return Object.assign({}, getVals(id)); },
-  setSetting(k, v){
-    getVals(id)[k] = v;
-    saveVals();
-    (PSUBS[id] || []).forEach(fn => {
-      try { fn(k, v, api(id)); } catch (e) { toast('Ошибка плагина: ' + e.message); }
-    });
-  },
-  onSettingsChange(fn){
-    if (!PSUBS[id]) PSUBS[id] = [];
-    PSUBS[id].push(fn);
-  },
+    /* --- функции и константы парсера --- */
+    addFunction(n, f){
+      if (!/^[a-z]+$/.test(n)) throw new Error('имя функции: только a-z');
+      F[n] = f;
+      (PL[id]._fn = PL[id]._fn || []).push(n);
+    },
+    addConstant(n, v){
+      if (!/^[a-z]+$/i.test(n)) throw new Error('имя константы: только буквы');
+      CONSTS[n] = v;
+      (PL[id]._const = PL[id]._const || []).push(n);
+    },
 
-  getApiVersion: () => API_VERSION,
-  getCompat: () => PL[id] ? PL[id]._compat : 'unknown'
-});
+    /* --- ввод / вывод --- */
+    insert: s => ins(s),
+    getExpr: () => expr,
+    getResult: () => { try { return ev(expr); } catch (e) { return NaN; } },
+    setExpr: s => { expr = String(s); done = false; upd(); },
 
+    /* --- эффекты --- */
+    vibrate: m => vib(m),
+    vibratePattern: arr => vib(arr),
+    beep: (f, d, t) => beep(f, d, t),
+    toast,
+
+    /* --- страницы --- */
+    addPage(o){
+      o._pluginId = id;
+      return addPage(o);
+    },
+    removePage: pid => removePage(pid),
+    openPage: pid => go(pid),
+    getCurrentPage: () => currentPage,
+
+    /* --- хранилище --- */
+    store,
+
+    /* --- настройки --- */
+    getSetting(k){ return getVals(id)[k]; },
+    getAllSettings(){ return Object.assign({}, getVals(id)); },
+    setSetting(k, v){
+      getVals(id)[k] = v;
+      saveVals();
+      (PSUBS[id] || []).forEach(fn => {
+        try { fn(k, v, api(id)); }
+        catch (e) { toast('Ошибка плагина: ' + e.message); }
+      });
+    },
+    onSettingsChange(fn){
+      if (!PSUBS[id]) PSUBS[id] = [];
+      PSUBS[id].push(fn);
+    },
+
+    /* --- события --- */
+    on(event, fn){
+      const unsub = on(event, fn, id);
+      listeners.push(unsub);
+      return unsub;
+    },
+    off(event, fn){ off(event, fn); },
+    emit(event, data){ emit(event, data); },
+
+    /* --- UI --- */
+    ui: UI,
+
+    /* --- CSS --- */
+    injectCSS(css){
+      const unsub = injectCSS(css);
+      cssList.push(unsub);
+      return unsub;
+    },
+
+    /* --- темы --- */
+    registerTheme(t){ registerTheme(t); },
+    setTheme(tid){ setTheme(tid); },
+
+    /* --- меню результата --- */
+    addResultAction(a){ addResultAction(a); },
+
+    /* --- сеть --- */
+    fetch: netFetch,
+    fetchJSON: netFetchJSON,
+    fetchText: netFetchText,
+
+    /* --- уведомления --- */
+    notify(opts){ UI.notify(opts); },
+
+    /* --- логирование --- */
+    log: (...args) => console.log('[' + id + ']', ...args),
+    warn: (...args) => console.warn('[' + id + ']', ...args),
+    error: (...args) => console.error('[' + id + ']', ...args),
+
+    /* --- локализация --- */
+    i18n(map){
+      const lang = (navigator.language || 'en').slice(0, 2);
+      const dict = map[lang] || map.en || map.ru || {};
+      return k => dict[k] !== undefined ? dict[k] : (map.en && map.en[k]) || k;
+    },
+
+    /* --- внутренние хуки для очистки --- */
+    _cleanup(){
+      cssList.forEach(fn => { try { fn(); } catch (e) {} });
+      listeners.forEach(fn => { try { fn(); } catch (e) {} });
+    }
+  };
+
+  return apiObj;
+};
+
+/* =========================================================
+   ЗАГРУЗКА / ВЫГРУЗКА
+   ========================================================= */
 function applyDefaults(id){
   const p = PL[id];
   if (!p || !p.settings) return;
@@ -562,12 +1045,18 @@ function applyDefaults(id){
 function load(id){
   const p = PL[id];
   if (!p) return;
+
   if (p._compat === 'too-new') {
     toast('Плагин «' + (p.name || id) + '» требует ядро ' + (p.apiVersion || '?'));
     return;
   }
+  if (p._missing && p._missing.length) {
+    toast('Плагин «' + (p.name || id) + '» требует: ' + p._missing.join(', '));
+    return;
+  }
   applyDefaults(id);
   if (p._on) return;
+
   try {
     if (p.onLoad) p.onLoad(api(id));
     p._on = 1;
@@ -580,9 +1069,20 @@ function unload(id){
   const p = PL[id];
   if (!p) return;
   try { if (p.onUnload) p.onUnload(api(id)); } catch (e) {}
+
+  /* чистим всё, что плагин навешал */
+  const a = api(id);
+  if (a._cleanup) { try { a._cleanup(); } catch (e) {} }
+
   $$('[data-plugin="' + id + '"]').forEach(e => e.remove());
+  Object.keys(PAGES).forEach(k => {
+    if (PAGES[k] && PAGES[k].pluginId === id) removePage(k);
+  });
+
   (p._fn || []).forEach(n => { delete F[n]; });
+  (p._const || []).forEach(n => { delete CONSTS[n]; });
   p._fn = 0;
+  p._const = 0;
   p._on = 0;
   PSUBS[id] = [];
 }
@@ -598,11 +1098,12 @@ registerPlugin({
   id: 'sci',
   name: 'Научный режим',
   description: 'sin, cos, tan (в градусах), ln, log, √, π и степень',
-  version: '1.0',
-  apiVersion: '2.0',
+  version: '2.0',
+  apiVersion: '3.0',
   author: 'Calc',
+  icon: '🧮',
   onLoad(a){
-    [['sin','sin('],['cos','cos('],['tan','tan('],['ln','ln('],['log','log('],['√','√('],['π','π'],['xʸ','^']]
+    [['sin','sin('],['cos','cos('],['tan','tan('],['ln','ln('],['log','log('],['√','√('],['π','π'],['e','e'],['xʸ','^']]
       .forEach(([l, i]) => a.addButton({ label: l, insert: i }));
   }
 }, 1);
@@ -611,9 +1112,10 @@ registerPlugin({
   id: 'vat',
   name: 'НДС',
   description: 'Кнопки «+НДС» и «−НДС» с настраиваемой ставкой',
-  version: '1.1',
-  apiVersion: '2.0',
+  version: '2.0',
+  apiVersion: '3.0',
   author: 'Calc',
+  icon: '💰',
   settings: {
     rate: { type: 'number', label: 'Ставка, %', default: 20, min: 0, max: 100, step: 0.5, hint: 'Например, 20' },
     labelMode: { type: 'seg', label: 'Подписи кнопок', default: 'short',
@@ -642,9 +1144,10 @@ registerPlugin({
   id: 'rnd',
   name: 'Случайное число',
   description: 'Вставляет случайное число с вибро-откликом',
-  version: '1.1',
-  apiVersion: '2.0',
+  version: '2.0',
+  apiVersion: '3.0',
   author: 'Calc',
+  icon: '🎲',
   settings: {
     min: { type: 'number', label: 'Минимум', default: 1, min: 0, max: 9999, step: 1 },
     max: { type: 'number', label: 'Максимум', default: 100, min: 1, max: 9999, step: 1 },
@@ -668,9 +1171,10 @@ registerPlugin({
   id: 'haptic',
   name: 'Вибро',
   description: 'Тест вибрации и диагностика',
-  version: '1.0',
-  apiVersion: '2.0',
+  version: '2.0',
+  apiVersion: '3.0',
   author: 'Calc',
+  icon: '📳',
   onLoad(a){
     a.addButton({
       label: '📳 Тест',
@@ -694,6 +1198,147 @@ registerPlugin({
   }
 }, 1);
 
+/* демо-плагин, показывающий новые возможности API 3.0 */
+registerPlugin({
+  id: 'demo',
+  name: 'Демо API 3.0',
+  description: 'Показывает вкладки, store, ui, хуки, темы',
+  version: '1.0',
+  apiVersion: '3.0',
+  author: 'Calc',
+  icon: '✨',
+  onLoad(a){
+    /* вкладка */
+    a.addPage({
+      id: 'demo-page',
+      title: 'Демо',
+      icon: '<path d="M12 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/>',
+      render: root => {
+        root.innerHTML = '';
+        root.append(UI.el('h1', { text: 'Демо API 3.0' }));
+
+        root.append(UI.card({
+          title: 'Счётчик в store',
+          hint: 'Значение хранится в изолированном хранилище плагина',
+          content: (() => {
+            const wrap = UI.el('div');
+            const out = UI.el('b', { text: String(a.store.get('count', 0)) });
+            out.style.fontSize = '24px';
+            out.style.display = 'block';
+            out.style.margin = '10px 0';
+            wrap.append(out);
+            const inc = UI.button({
+              label: '+1',
+              onClick: () => {
+                const v = a.store.get('count', 0) + 1;
+                a.store.set('count', v);
+                out.textContent = String(v);
+                a.vibrate(15);
+              }
+            });
+            const rst = UI.button({
+              label: 'Сброс',
+              variant: 't',
+              onClick: () => { a.store.set('count', 0); out.textContent = '0'; }
+            });
+            const row = UI.el('div', { class: 'row' });
+            row.append(inc, rst);
+            wrap.append(row);
+            return wrap;
+          })()
+        }));
+
+        root.append(UI.card({
+          title: 'UI-компоненты',
+          content: (() => {
+            const wrap = UI.el('div');
+            wrap.append(UI.toggle({
+              label: 'Пример переключателя',
+              value: true,
+              onChange: v => a.toast('Значение: ' + v)
+            }));
+            const sel = UI.select({
+              options: [{ value: 'a', label: 'А' }, { value: 'b', label: 'Б' }, { value: 'c', label: 'В' }],
+              value: 'a',
+              onChange: v => a.toast('Выбрано: ' + v)
+            });
+            sel.style.marginTop = '10px';
+            wrap.append(sel);
+            const b = UI.button({
+              label: 'Открыть модалку',
+              onClick: () => {
+                UI.modal({
+                  title: 'Привет!',
+                  content: UI.el('div', { text: 'Это модальное окно из плагина.' }),
+                  actions: [
+                    { label: 'Отмена', variant: 't' },
+                    { label: 'OK', onClick: () => a.toast('OK!') }
+                  ]
+                });
+              }
+            });
+            b.style.marginTop = '10px';
+            wrap.append(b);
+            return wrap;
+          })()
+        }));
+
+        root.append(UI.card({
+          title: 'Хуки событий',
+          hint: 'Плагин реагирует на нажатия клавиш',
+          content: UI.el('div', { text: 'Попробуй переключиться на «Счёт» и нажать что-нибудь.' })
+        }));
+
+        root.append(UI.card({
+          title: 'CSS от плагина',
+          hint: 'Кнопка ниже переключает свою собственную тему',
+          content: (() => {
+            const b = UI.button({
+              label: 'Включить/выключить неон',
+              onClick: () => {
+                if (a.store.get('neon')) {
+                  a.store.set('neon', false);
+                  a.setTheme(null);
+                } else {
+                  a.store.set('neon', true);
+                  a.registerTheme({
+                    id: 'demo-neon',
+                    name: 'Неон',
+                    light: { '--pr': '#06f', '--pc': '#cdf', '--onpc': '#013' },
+                    dark: { '--pr': '#0ff', '--pc': '#036', '--onpc': '#cff' }
+                  });
+                  a.setTheme('demo-neon');
+                }
+              }
+            });
+            return b;
+          })()
+        }));
+      }
+    });
+
+    /* хук на нажатия */
+    a.on('calc:press', e => {
+      if (e.key === '=') {
+        // просто логируем
+        a.log('нажато =', e.expr);
+      }
+    });
+
+    /* хук на результат — добавляем пункт в контекстное меню */
+    a.addResultAction({
+      label: '🔥 Удвоить',
+      onClick: result => {
+        try {
+          const n = parseFloat(result.replace('−','-'));
+          if (!isNaN(n)) a.setExpr(String(n * 2));
+        } catch (e) {}
+      }
+    });
+  },
+  onUnload(){}
+}, 1);
+
 /* ---------- загрузка кастомных ---------- */
 for (const id in custom) {
   try {
@@ -704,7 +1349,9 @@ for (const id in custom) {
 enabled = enabled.filter(id => PL[id]);
 enabled.forEach(load);
 
-/* ---------- рендер списка плагинов ---------- */
+/* =========================================================
+   СПИСОК ПЛАГИНОВ
+   ========================================================= */
 function rPlug(){
   const l = $('#plist');
   if (!l) return;
@@ -727,20 +1374,27 @@ function rPlug(){
         '<svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg></div>' +
         '<div class="pl-body"></div>' : '');
 
-    c.querySelector('.ava').textContent = (p.name || '?')[0];
+    c.querySelector('.ava').textContent = p.icon || (p.name || '?')[0];
     const bEl = c.querySelector('b');
     bEl.textContent = p.name || p.id;
 
+    /* бейджи */
     if (p._compat === 'too-new') {
-      const badge = document.createElement('span');
-      badge.className = 'badge warn';
-      badge.textContent = '⚠ требует ядро ' + (p.apiVersion || '?');
-      bEl.append(badge);
+      const b = document.createElement('span');
+      b.className = 'badge warn';
+      b.textContent = '⚠ требует ядро ' + (p.apiVersion || '?');
+      bEl.append(b);
     } else if (p._compat === 'legacy') {
-      const badge = document.createElement('span');
-      badge.className = 'badge legacy';
-      badge.textContent = 'legacy';
-      bEl.append(badge);
+      const b = document.createElement('span');
+      b.className = 'badge legacy';
+      b.textContent = 'legacy';
+      bEl.append(b);
+    }
+    if (p.permissions && p.permissions.length) {
+      const b = document.createElement('span');
+      b.className = 'badge perm';
+      b.textContent = p.permissions.join(',');
+      bEl.append(b);
     }
 
     c.querySelector('small').textContent =
@@ -748,9 +1402,9 @@ function rPlug(){
 
     const inp = c.querySelector('input[type=checkbox]');
     inp.checked = enabled.indexOf(p.id) >= 0;
-    if (p._compat === 'too-new') {
+    if (p._compat === 'too-new' || (p._missing && p._missing.length)) {
       inp.disabled = true;
-      inp.title = 'Обновите приложение';
+      inp.title = p._compat === 'too-new' ? 'Обновите приложение' : 'Не хватает: ' + p._missing.join(', ');
     } else {
       inp.onchange = () => {
         vib();
@@ -795,7 +1449,9 @@ function rPlug(){
   });
 }
 
-/* ---------- настройки плагина ---------- */
+/* =========================================================
+   ПОСТРОЕНИЕ UI НАСТРОЕК
+   ========================================================= */
 function buildSettings(pid, defs, root){
   const vals = getVals(pid);
   const set = (k, v) => {
@@ -894,33 +1550,46 @@ function buildSettings(pid, defs, root){
   }
 }
 
-/* ---------- редактор плагинов ---------- */
+/* =========================================================
+   РЕДАКТОР ПЛАГИНОВ
+   ========================================================= */
 const TPL = [
 'registerPlugin({',
-"  id: 'hello',",
+"  id: 'myplugin',",
 "  name: 'Мой плагин',",
-"  description: 'Кнопка +1',",
+"  description: 'Пример плагина на API 3.0',",
 "  version: '1.0',",
-"  apiVersion: '2.0',",
+"  apiVersion: '3.0',",
 "  author: 'me',",
+"  icon: '✨',",
+"  permissions: ['storage'],",
 '  settings: {',
 "    step: { type: 'number', label: 'Шаг', default: 1, min: 1, max: 100 },",
 "    vib:  { type: 'bool',   label: 'Вибро', default: true }",
 '  },',
 '  onLoad(api) {',
-'    const draw = () => {',
-"      document.querySelectorAll('[data-plugin=\"hello\"]').forEach(e => e.remove());",
-'      api.addButton({',
-"        label: '+' + api.getSetting('step'),",
-'        onClick: a => {',
-'          const cur = a.getResult();',
-"          a.setExpr(String((isNaN(cur) ? 0 : cur) + (+a.getSetting('step'))));",
-"          if (a.getSetting('vib')) a.vibrate(20);",
-'        }',
-'      });',
-'    };',
-'    draw();',
-'    api.onSettingsChange(draw);',
+'    // кнопка на главном экране',
+'    api.addButton({',
+"      label: 'Привет',",
+'      onClick: a => {',
+"        a.toast('Привет из плагина!');",
+"        a.vibrate(20);",
+'      }',
+'    });',
+'',
+'    // своя вкладка',
+'    api.addPage({',
+"      id: 'my-page',",
+"      title: 'Моя',",
+'      render: root => {',
+"        root.innerHTML = '';",
+"        root.append(api.ui.el('h1', { text: 'Моя страница' }));",
+'      }',
+'    });',
+'',
+'    // хранилище',
+"    api.store.set('hello', 'world');",
+"    api.log('store:', api.store.get('hello'));",
 '  },',
 '  onUnload() {}',
 '});'
@@ -986,7 +1655,9 @@ if (instBtn) instBtn.onclick = () => {
   toast('Плагин установлен');
 };
 
-/* ---------- настройки приложения ---------- */
+/* =========================================================
+   НАСТРОЙКИ ПРИЛОЖЕНИЯ
+   ========================================================= */
 function seg(id, key, conv){
   const el = $('#' + id);
   if (!el) return;
@@ -1015,13 +1686,7 @@ if (swsEl) {
     b.dataset.h = h;
     b.style.background = 'hsl(' + (h === 'sys' ? sysHue() : h) + ' 60% 50%)';
     if (h === 'sys') { b.textContent = 'A'; b.style.color = '#fff'; b.style.fontWeight = '700'; }
-    b.onclick = () => {
-      S.hue = h;
-      saveS();
-      applyTheme();
-      sw();
-      vib();
-    };
+    b.onclick = () => { S.hue = h; saveS(); applyTheme(); sw(); vib(); };
     swsEl.append(b);
   });
 }
@@ -1045,17 +1710,33 @@ an();
 const avEl = $('#api-ver');
 if (avEl) avEl.textContent = 'API ' + API_VERSION;
 
+/* рендерим темы, если есть */
+renderThemes();
+
 applyTheme();
 upd();
 
-/* ---------- нативный режим ---------- */
+/* =========================================================
+   НАТИВНЫЙ РЕЖИМ
+   ========================================================= */
 (function(){
   const N = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.NativeTools;
   if (!N) return;
   const col = () => N.getColors().then(r => { PAL = r; applyTheme(); }).catch(() => {});
   col();
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) col(); });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      col();
+      emit('resume', {});
+    } else {
+      emit('pause', {});
+    }
+  });
   N.getPending().then(r => { if (r && r.text) openCalcText(r.text, r.name); }).catch(() => {});
 })();
+
+/* сетевые события */
+window.addEventListener('online', () => emit('network', { online: true }));
+window.addEventListener('offline', () => emit('network', { online: false }));
 
 })();
