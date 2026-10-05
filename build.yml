@@ -1,0 +1,233 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Capacitor project
+        run: |
+          npm init -y
+          npm i @capacitor/core@6 @capacitor/android@6
+          npm i -D @capacitor/cli@6
+          npx cap init Calculator com.gkk.calculator --web-dir=www
+          npx cap add android
+
+      - name: Native code (vibration, Material You, .calc files)
+        run: |
+          D=android/app/src/main/java/com/gkk/calculator
+          cat > $D/NativeTools.java <<'EOF'
+          package com.gkk.calculator;
+
+          import android.content.Context;
+          import android.os.Build;
+          import android.os.VibrationEffect;
+          import android.os.Vibrator;
+          import com.getcapacitor.JSArray;
+          import com.getcapacitor.JSObject;
+          import com.getcapacitor.Plugin;
+          import com.getcapacitor.PluginCall;
+          import com.getcapacitor.PluginMethod;
+          import com.getcapacitor.annotation.CapacitorPlugin;
+
+          @CapacitorPlugin(name = "NativeTools")
+          public class NativeTools extends Plugin {
+            public static String pendingText = null;
+            public static String pendingName = "";
+
+            @SuppressWarnings("deprecation")
+            @PluginMethod
+            public void vibrate(PluginCall call) {
+              try {
+                Vibrator v = (Vibrator) getContext().getSystemService(Context.VIBRATOR_SERVICE);
+                if (v == null || !v.hasVibrator()) { call.resolve(); return; }
+                JSArray arr = call.getArray("pattern");
+                if (arr != null && arr.length() > 0) {
+                  long[] t = new long[arr.length() + 1];
+                  t[0] = 0;
+                  for (int i = 0; i < arr.length(); i++) t[i + 1] = Math.max(0, arr.getLong(i));
+                  if (Build.VERSION.SDK_INT >= 26) v.vibrate(VibrationEffect.createWaveform(t, -1));
+                  else v.vibrate(t, -1);
+                } else {
+                  long d = Math.max(15, Math.min(500, call.getInt("duration", 20)));
+                  if (Build.VERSION.SDK_INT >= 26) v.vibrate(VibrationEffect.createOneShot(d, VibrationEffect.DEFAULT_AMPLITUDE));
+                  else v.vibrate(d);
+                }
+                call.resolve();
+              } catch (Exception e) {
+                call.reject(String.valueOf(e.getMessage()));
+              }
+            }
+
+            @PluginMethod
+            public void getColors(PluginCall call) {
+              if (Build.VERSION.SDK_INT < 31) { call.reject("Android 12+ required"); return; }
+              JSObject o = new JSObject();
+              String[][] sets = {{"a1", "system_accent1_"}, {"a2", "system_accent2_"}, {"a3", "system_accent3_"}, {"n1", "system_neutral1_"}, {"n2", "system_neutral2_"}};
+              int[] tones = {0, 10, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000};
+              for (String[] s : sets) {
+                for (int t : tones) {
+                  int id = getContext().getResources().getIdentifier(s[1] + t, "color", "android");
+                  if (id != 0) {
+                    int c = getContext().getResources().getColor(id, getContext().getTheme());
+                    o.put(s[0] + "_" + t, String.format("#%06X", 0xFFFFFF & c));
+                  }
+                }
+              }
+              call.resolve(o);
+            }
+
+            @PluginMethod
+            public void getPending(PluginCall call) {
+              JSObject o = new JSObject();
+              if (pendingText != null) {
+                o.put("text", pendingText);
+                o.put("name", pendingName);
+                pendingText = null;
+              }
+              call.resolve(o);
+            }
+          }
+          EOF
+          cat > $D/MainActivity.java <<'EOF'
+          package com.gkk.calculator;
+
+          import android.content.Intent;
+          import android.net.Uri;
+          import android.os.Bundle;
+          import com.getcapacitor.BridgeActivity;
+          import java.io.ByteArrayOutputStream;
+          import java.io.InputStream;
+          import org.json.JSONObject;
+
+          public class MainActivity extends BridgeActivity {
+            @Override
+            public void onCreate(Bundle savedInstanceState) {
+              registerPlugin(NativeTools.class);
+              super.onCreate(savedInstanceState);
+              handle(getIntent(), false);
+            }
+
+            @Override
+            protected void onNewIntent(Intent intent) {
+              super.onNewIntent(intent);
+              handle(intent, true);
+            }
+
+            @SuppressWarnings("deprecation")
+            private void handle(Intent i, boolean live) {
+              if (i == null) return;
+              String action = i.getAction();
+              String text = null;
+              String name = "";
+              try {
+                if (Intent.ACTION_VIEW.equals(action) && i.getData() != null) {
+                  Uri u = i.getData();
+                  text = read(u);
+                  name = String.valueOf(u.getLastPathSegment());
+                } else if (Intent.ACTION_SEND.equals(action)) {
+                  Uri u = (Uri) i.getParcelableExtra(Intent.EXTRA_STREAM);
+                  if (u != null) {
+                    text = read(u);
+                    name = String.valueOf(u.getLastPathSegment());
+                  } else {
+                    text = i.getStringExtra(Intent.EXTRA_TEXT);
+                  }
+                }
+              } catch (Exception e) {
+                return;
+              }
+              if (text == null || text.isEmpty()) return;
+              NativeTools.pendingText = text;
+              NativeTools.pendingName = name;
+              if (live && getBridge() != null && getBridge().getWebView() != null) {
+                final String js = "window.openCalcText&&window.openCalcText(" + JSONObject.quote(text) + "," + JSONObject.quote(name) + ")";
+                getBridge().getWebView().post(new Runnable() {
+                  public void run() { getBridge().getWebView().evaluateJavascript(js, null); }
+                });
+                NativeTools.pendingText = null;
+              }
+            }
+
+            private String read(Uri u) throws Exception {
+              InputStream in = getContentResolver().openInputStream(u);
+              ByteArrayOutputStream out = new ByteArrayOutputStream();
+              byte[] b = new byte[4096];
+              int n, total = 0;
+              while ((n = in.read(b)) > 0) {
+                out.write(b, 0, n);
+                total += n;
+                if (total > 300000) break;
+              }
+              in.close();
+              return out.toString("UTF-8");
+            }
+          }
+          EOF
+
+      - name: Patch AndroidManifest
+        run: |
+          python3 - <<'PY'
+          p = 'android/app/src/main/AndroidManifest.xml'
+          s = open(p, encoding='utf-8').read()
+          filters = r'''
+              <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="content"/>
+                <data android:scheme="file"/>
+                <data android:mimeType="text/plain"/>
+              </intent-filter>
+              <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="content" android:host="*" android:mimeType="*/*" android:pathPattern=".*\\.calc"/>
+                <data android:scheme="file" android:host="*" android:mimeType="*/*" android:pathPattern=".*\\.calc"/>
+              </intent-filter>
+              <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="text/plain"/>
+              </intent-filter>
+          '''
+          assert '</activity>' in s
+          s = s.replace('</activity>', filters + '</activity>', 1)
+          s = s.replace('</manifest>', '    <uses-permission android:name="android.permission.VIBRATE"/>\n</manifest>')
+          open(p, 'w', encoding='utf-8').write(s)
+          PY
+
+      - name: Sync and build
+        run: |
+          npx cap sync android
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: calculator-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Calculator build ${{ github.run_number }}
+          files: android/app/build/outputs/apk/debug/app-debug.apk
