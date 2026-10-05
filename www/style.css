@@ -109,12 +109,10 @@ button{touch-action:manipulation;font:inherit}
 .set-row .range-val{font-variant-numeric:tabular-nums;color:var(--tx2);font-size:13px;min-width:32px;text-align:right}
 .set-row .seg{margin-top:0}
 
-/* бейджи совместимости и кнопка обновления */
+/* бейджи совместимости */
 .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:8px;vertical-align:middle}
 .badge.warn{background:var(--tc);color:var(--ontc)}
 .badge.legacy{background:var(--sc);color:var(--tx2)}
-.pl-actions{display:flex;gap:8px;margin-top:12px}
-.pl-actions .btn{padding:8px 14px;font-size:13px}
 
 @media (orientation:landscape) and (max-height:520px){
  #calc{display:grid!important;grid-template-columns:1fr 1.4fr;grid-template-rows:auto 1fr;gap:8px 16px}
