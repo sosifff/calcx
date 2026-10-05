@@ -21,20 +21,14 @@ h1{font-size:28px;font-weight:500;margin:8px 4px 16px}
 #extra::-webkit-scrollbar{display:none}
 #keys{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;grid-auto-rows:minmax(52px,8.6vh)}
 
-/* --- клавиши: всё в ролях Material You, без пестроты --- */
 .k{position:relative;overflow:hidden;border:0;border-radius:30px;font-size:26px;
    background:var(--sc);color:var(--tx);cursor:pointer;
    transition:border-radius .22s,transform .18s cubic-bezier(.3,1.6,.5,1),background .3s;
    animation:in .5s backwards}
 .k:active{border-radius:14px;transform:scale(.92)}
-
-/* операторы — вторичный контейнер (мягкий акцент) */
 .k.op{background:var(--pc);color:var(--onpc)}
-/* служебные (AC, (), %, ⌫) — третичный контейнер */
 .k.fn{background:var(--tc);color:var(--ontc)}
-/* равно — primary */
 .k.eq{background:var(--pr);color:var(--onpr)}
-/* плагинные кнопки — тот же вторичный контейнер, что и операторы */
 .k.chip{flex:none;height:42px;padding:0 18px;border-radius:21px;font-size:16px;animation:none;
         background:var(--pc);color:var(--onpc)}
 
@@ -60,6 +54,7 @@ nav{display:flex;margin:6px 12px 12px;padding:8px 4px;border-radius:32px;backgro
 .sw i::after{content:"";position:absolute;top:6px;left:6px;width:16px;height:16px;border-radius:50%;background:var(--tx2);transition:.3s cubic-bezier(.3,1.6,.5,1)}
 .sw input:checked+i{background:var(--pr);border-color:var(--pr)}
 .sw input:checked+i::after{left:24px;top:4px;width:24px;height:24px;margin:0;background:var(--onpr);transform:translate(-2px,0)}
+.sw input:disabled+i{opacity:.45}
 .seg{display:flex;border:1px solid var(--ol);border-radius:20px;overflow:hidden;margin-top:10px}
 .seg button{flex:1;border:0;background:none;color:var(--tx);padding:10px 4px;font-size:14px;cursor:pointer;transition:.25s}
 .seg button.on{background:var(--pc);color:var(--onpc);font-weight:600}
@@ -113,6 +108,13 @@ button{touch-action:manipulation;font:inherit}
 .set-row input[type=range]{width:100%;accent-color:var(--pr);background:transparent;height:24px}
 .set-row .range-val{font-variant-numeric:tabular-nums;color:var(--tx2);font-size:13px;min-width:32px;text-align:right}
 .set-row .seg{margin-top:0}
+
+/* бейджи совместимости и кнопка обновления */
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:8px;vertical-align:middle}
+.badge.warn{background:var(--tc);color:var(--ontc)}
+.badge.legacy{background:var(--sc);color:var(--tx2)}
+.pl-actions{display:flex;gap:8px;margin-top:12px}
+.pl-actions .btn{padding:8px 14px;font-size:13px}
 
 @media (orientation:landscape) and (max-height:520px){
  #calc{display:grid!important;grid-template-columns:1fr 1.4fr;grid-template-rows:auto 1fr;gap:8px 16px}
