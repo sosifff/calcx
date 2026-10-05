@@ -7,6 +7,8 @@ main{flex:1;position:relative;overflow:hidden}
 .page{position:absolute;inset:0;overflow:auto;padding:12px 16px;opacity:0;transform:translateY(18px) scale(.97);pointer-events:none;transition:opacity .35s,transform .4s cubic-bezier(.2,.9,.3,1.2)}
 .page.on{opacity:1;transform:none;pointer-events:auto}
 h1{font-size:28px;font-weight:500;margin:8px 4px 16px}
+h2{font-size:22px;font-weight:500;margin:6px 4px 12px}
+h3{font-size:17px;font-weight:600;margin:4px 0 8px}
 #calc{display:flex;flex-direction:column;overflow:hidden}
 #disp{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-end;padding:8px 12px;min-height:0;overflow:hidden}
 #ex{font-size:44px;font-weight:300;word-break:break-all;text-align:right;transition:font-size .2s;color:var(--tx)}
@@ -35,8 +37,9 @@ h1{font-size:28px;font-weight:500;margin:8px 4px 16px}
 @keyframes in{from{opacity:0;transform:translateY(24px) scale(.8)}}
 .rp{position:absolute;border-radius:50%;background:currentColor;opacity:.28;transform:scale(0);animation:rp .55s ease-out forwards;pointer-events:none}
 @keyframes rp{to{transform:scale(1);opacity:0}}
-nav{display:flex;margin:6px 12px 12px;padding:8px 4px;border-radius:32px;background:var(--sf);box-shadow:0 2px 12px #0002}
-.tab{flex:1;border:0;background:none;color:var(--tx2);display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;cursor:pointer;padding:0}
+nav{display:flex;margin:6px 12px 12px;padding:8px 4px;border-radius:32px;background:var(--sf);box-shadow:0 2px 12px #0002;overflow-x:auto;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+.tab{flex:1;min-width:60px;border:0;background:none;color:var(--tx2);display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;cursor:pointer;padding:0}
 .tab i{width:60px;height:32px;border-radius:16px;display:grid;place-items:center;transition:background .3s,width .3s cubic-bezier(.2,.9,.3,1.3)}
 .tab svg{width:24px;height:24px;fill:currentColor;transition:transform .3s cubic-bezier(.3,1.8,.5,1)}
 .tab.on{color:var(--tx);font-weight:600}
@@ -64,6 +67,7 @@ nav{display:flex;margin:6px 12px 12px;padding:8px 4px;border-radius:32px;backgro
 .btn{border:0;border-radius:24px;padding:14px 22px;background:var(--pr);color:var(--onpr);font-size:15px;font-weight:600;cursor:pointer;transition:transform .2s,border-radius .2s}
 .btn:active{transform:scale(.95);border-radius:12px}
 .btn.t{background:var(--sc);color:var(--tx)}
+.btn.s{padding:8px 14px;font-size:13px;border-radius:18px}
 .hi{cursor:pointer;transition:transform .2s}.hi:active{transform:scale(.97)}
 .hi small{font-size:15px}.hi b{font-size:24px;font-weight:400}
 .empty{text-align:center;color:var(--tx2);margin-top:60px}
@@ -109,10 +113,45 @@ button{touch-action:manipulation;font:inherit}
 .set-row .range-val{font-variant-numeric:tabular-nums;color:var(--tx2);font-size:13px;min-width:32px;text-align:right}
 .set-row .seg{margin-top:0}
 
-/* бейджи совместимости */
-.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:8px;vertical-align:middle}
+/* бейджи совместимости и мета */
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:6px;vertical-align:middle}
 .badge.warn{background:var(--tc);color:var(--ontc)}
 .badge.legacy{background:var(--sc);color:var(--tx2)}
+.badge.perm{background:var(--pc);color:var(--onpc)}
+
+/* ---------- модалки плагинов ---------- */
+.modal-back{position:fixed;inset:0;background:#0008;z-index:50;display:flex;
+  align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .25s}
+.modal-back.on{opacity:1}
+.modal{background:var(--bg);color:var(--tx);border-radius:24px;padding:20px;
+  max-width:480px;width:100%;max-height:85%;overflow:auto;
+  transform:scale(.92);opacity:0;transition:transform .25s,opacity .25s}
+.modal-back.on .modal{transform:scale(1);opacity:1}
+.modal h2{margin:0 0 12px;font-size:20px;font-weight:600}
+.modal-actions{display:flex;gap:10px;margin-top:16px;justify-content:flex-end}
+
+/* ---------- оверлей загрузки ---------- */
+.overlay-load{position:fixed;inset:0;background:#0008;z-index:60;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#fff}
+.overlay-load .spinner{width:40px;height:40px;border:4px solid #fff4;border-top-color:#fff;
+  border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- системные уведомления в приложении ---------- */
+.notif{position:fixed;top:12px;left:50%;transform:translate(-50%,-100%);
+  background:var(--tx);color:var(--bg);padding:12px 18px;border-radius:16px;
+  font-size:14px;z-index:70;max-width:90%;transition:transform .3s,opacity .3s;opacity:0;
+  display:flex;align-items:center;gap:10px}
+.notif.on{transform:translate(-50%,0);opacity:1}
+
+/* ---------- контекстное меню результата ---------- */
+.ctx-menu{position:fixed;background:var(--sf);color:var(--tx);border-radius:16px;
+  padding:6px;z-index:45;box-shadow:0 6px 24px #0003;min-width:180px;
+  opacity:0;transform:scale(.9);transition:opacity .2s,transform .2s}
+.ctx-menu.on{opacity:1;transform:scale(1)}
+.ctx-menu button{display:block;width:100%;border:0;background:none;color:var(--tx);
+  padding:12px 16px;text-align:left;font-size:14px;cursor:pointer;border-radius:10px}
+.ctx-menu button:active{background:var(--sc)}
 
 @media (orientation:landscape) and (max-height:520px){
  #calc{display:grid!important;grid-template-columns:1fr 1.4fr;grid-template-rows:auto 1fr;gap:8px 16px}
