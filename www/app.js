@@ -4,6 +4,14 @@ const S=Object.assign({mode:'auto',hue:'sys',vib:true,pow:1,anim:!matchMedia('(p
 const saveS=()=>LS.set('s',S);
 let PAL=null;
 
+/* =========================================================
+   ВЕРСИЯ API ПЛАГИНОВ
+   Меняй ТОЛЬКО при ломающих изменениях:
+   - MAJOR увеличиваешь, если удалил/переименовал методы api
+   - MINOR увеличиваешь, если только добавил новое
+   ========================================================= */
+const API_VERSION = '2.0';
+
 /* ---------- вибро / тосты ---------- */
 const vib=(m)=>{if(!S.vib)return false;const p=m||[8,16,28][S.pow];
  try{const N=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.NativeTools;
@@ -96,66 +104,164 @@ function rHist(){const h=$('#hist');h.innerHTML=hist.length?'':'<div class="empt
   d.children[0].textContent=x.e+' =';d.children[1].textContent=x.r;d.onclick=()=>{expr=x.r;done=true;upd();go('calc')};h.append(d)});
  if(hist.length){const c=document.createElement('button');c.className='btn t';c.style.width='100%';c.textContent='Очистить';c.onclick=()=>{hist=[];LS.set('h',hist);rHist()};h.append(c)}}
 
-/* ---------- система плагинов ---------- */
+/* =========================================================
+   СИСТЕМА ПЛАГИНОВ
+   ========================================================= */
 const PL={},BUILTIN=new Set(),custom=LS.get('custom',{});
-let enabled=LS.get('en',['sci','haptic']);
+let enabled=LS.get('en',['sci','haptic','solver']);
 
-/* значения настроек плагинов: {pluginId: {key: value}} */
+/* значения настроек плагинов */
 const PVALS=LS.get('pvals',{});
 const getVals=id=>PVALS[id]||(PVALS[id]={});
 const saveVals=id=>{LS.set('pvals',PVALS)};
-/* подписчики на изменение настроек: {pluginId: [fn, fn]} */
 const PSUBS={};
 
-const api=id=>({
- addButton(o){const b=document.createElement('button');b.className='k fn chip';b.textContent=o.label;b.dataset.plugin=id;
-  b.onclick=()=>{try{o.onClick?o.onClick(api(id)):ins(o.insert||o.label)}catch(e){toast('Ошибка плагина: '+e.message)}};$('#extra').append(b)},
- addFunction(n,f){if(!/^[a-z]+$/.test(n))throw new Error('имя функции: только a-z');F[n]=f;(PL[id]._fn=PL[id]._fn||[]).push(n)},
- insert:s=>ins(s),getExpr:()=>expr,getResult:()=>{try{return ev(expr)}catch(e){return NaN}},
- setExpr:s=>{expr=String(s);done=false;upd()},vibrate:m=>vib(m),toast,
+/* ---- версии ---- */
+const parseVer = v => String(v||'1.0').split('.').map(n=>parseInt(n,10)||0);
+const cmpVer = (a,b) => {const A=parseVer(a),B=parseVer(b);return (A[0]-B[0])||(A[1]-B[1])};
 
- /* --- доступ к настройкам --- */
+/* ---- шимы для legacy-плагинов ---- */
+const SHIMS = {
+  /* API 1.x: api.addPage не существовал — игнорируем без ошибки */
+  addPage_1x(apiObj){
+    return { warn: 'addPage недоступен в API 1.x' };
+  },
+  /* API 1.x: api.getSetting не существовал — возвращаем дефолт */
+  getSetting_1x(apiObj, k, dflt){
+    return dflt;
+  }
+};
+
+/* ---- главный API ---- */
+const api=id=>({
+ _id:id,
+ _legacy:false,
+
+ addButton(o){
+   const b=document.createElement('button');
+   b.className='k fn chip';
+   b.textContent=o.label;
+   b.dataset.plugin=id;
+   b.onclick=()=>{
+     try{o.onClick?o.onClick(api(id)):ins(o.insert||o.label)}
+     catch(e){toast('Ошибка плагина: '+e.message)}
+   };
+   $('#extra').append(b);
+ },
+
+ addFunction(n,f){
+   if(!/^[a-z]+$/.test(n))throw new Error('имя функции: только a-z');
+   F[n]=f;
+   (PL[id]._fn=PL[id]._fn||[]).push(n);
+ },
+
+ insert:s=>ins(s),
+ getExpr:()=>expr,
+ getResult:()=>{try{return ev(expr)}catch(e){return NaN}},
+ setExpr:s=>{expr=String(s);done=false;upd()},
+ vibrate:m=>vib(m),
+ toast,
+
+ /* --- настройки --- */
  getSetting(k){return getVals(id)[k]},
  getAllSettings(){return {...getVals(id)}},
  setSetting(k,v){
-   getVals(id)[k]=v;saveVals(id);
-   (PSUBS[id]||[]).forEach(fn=>{try{fn(k,v,api(id))}catch(e){toast('Ошибка плагина: '+e.message)}})
+   getVals(id)[k]=v;
+   saveVals(id);
+   (PSUBS[id]||[]).forEach(fn=>{try{fn(k,v,api(id))}catch(e){toast('Ошибка плагина: '+e.message)}});
  },
- onSettingsChange(fn){(PSUBS[id]=PSUBS[id]||[]).push(fn)}
+ onSettingsChange(fn){(PSUBS[id]=PSUBS[id]||[]).push(fn)},
+
+ /* --- инфо о ядре --- */
+ getApiVersion:()=>API_VERSION,
+ getCompat:()=>PL[id]?PL[id]._compat:'unknown'
 });
 
-function registerPlugin(d,builtin){if(!d||!d.id)throw new Error('нужен id');PL[d.id]=d;if(builtin)BUILTIN.add(d.id);}
+/* ---- регистрация плагина ---- */
+function registerPlugin(d, builtin){
+  if(!d || !d.id) throw new Error('нужен id');
 
-/* применить дефолты из settings, если пользователь ещё ничего не менял */
+  const want = d.apiVersion || '1.0';
+  const have = API_VERSION;
+  const [wmaj] = parseVer(want);
+  const [hmaj] = parseVer(have);
+
+  d._compat = 'ok';
+  if (wmaj > hmaj) {
+    d._compat = 'too-new';
+  } else if (wmaj < hmaj) {
+    d._compat = 'legacy';
+  }
+
+  PL[d.id] = d;
+  if (builtin) BUILTIN.add(d.id);
+}
+
+/* ---- дефолты настроек ---- */
 function applyDefaults(id){
- const p=PL[id];if(!p||!p.settings)return;
- const v=getVals(id);let changed=false;
+ const p=PL[id];
+ if(!p||!p.settings)return;
+ const v=getVals(id);
+ let changed=false;
  for(const k in p.settings){
    if(!(k in v)){v[k]=p.settings[k].default;changed=true}
  }
  if(changed)saveVals(id);
 }
 
+/* ---- загрузка плагина ---- */
 function load(id){
- const p=PL[id];if(!p)return;
- applyDefaults(id);
- if(p._on)return;
- try{p.onLoad&&p.onLoad(api(id));p._on=1}
- catch(e){toast('Плагин «'+(p.name||id)+'»: '+e.message)}
+  const p=PL[id];
+  if(!p) return;
+
+  if (p._compat === 'too-new') {
+    toast('Плагин «'+(p.name||id)+'» требует ядро '+(p.apiVersion||'?')+
+          ', у вас '+API_VERSION);
+    return;
+  }
+
+  applyDefaults(id);
+  if (p._on) return;
+
+  const realApi = api(id);
+  if (p._compat === 'legacy') realApi._legacy = true;
+
+  /* подкладываем шимы для legacy */
+  if (p._compat === 'legacy') {
+    if (typeof realApi.addPage !== 'function') {
+      /* уже нет — ок */
+    }
+  }
+
+  try {
+    p.onLoad && p.onLoad(realApi);
+    p._on = 1;
+  } catch(e) {
+    toast('Плагин «'+(p.name||id)+'»: '+e.message);
+  }
 }
+
+/* ---- выгрузка ---- */
 function unload(id){
- const p=PL[id];if(!p)return;
- try{p.onUnload&&p.onUnload(api(id))}catch(e){}
- $$(`[data-plugin="${id}"]`).forEach(e=>e.remove());
- (p._fn||[]).forEach(n=>delete F[n]);p._fn=0;p._on=0;PSUBS[id]=[];
+  const p=PL[id];
+  if(!p) return;
+  try { p.onUnload && p.onUnload(api(id)); } catch(e) {}
+  $$(`[data-plugin="${id}"]`).forEach(e=>e.remove());
+  (p._fn||[]).forEach(n=>delete F[n]);
+  p._fn=0;
+  p._on=0;
+  PSUBS[id]=[];
 }
+
 function runCode(src){new Function('registerPlugin',src)(d=>registerPlugin(d,false))}
 
-/* ---------- встроенные плагины ---------- */
-registerPlugin({id:'sci',name:'Научный режим',description:'sin, cos, tan (в градусах), ln, log, √, π и степень',version:'1.0',author:'Calc',
+/* =========================================================
+   ВСТРОЕННЫЕ ПЛАГИНЫ
+   ========================================================= */
+registerPlugin({id:'sci',name:'Научный режим',description:'sin, cos, tan (в градусах), ln, log, √, π и степень',version:'1.0',apiVersion:'2.0',author:'Calc',
  onLoad(a){[['sin','sin('],['cos','cos('],['tan','tan('],['ln','ln('],['log','log('],['√','√('],['π','π'],['xʸ','^']].forEach(([l,i])=>a.addButton({label:l,insert:i}))}},1);
 
-registerPlugin({id:'vat',name:'НДС',description:'Кнопки «+НДС» и «−НДС» с настраиваемой ставкой',version:'1.1',author:'Calc',
+registerPlugin({id:'vat',name:'НДС',description:'Кнопки «+НДС» и «−НДС» с настраиваемой ставкой',version:'1.1',apiVersion:'2.0',author:'Calc',
  settings:{
    rate:{type:'number',label:'Ставка, %',default:20,min:0,max:100,step:0.5,hint:'Например, 20 для России'},
    labelMode:{type:'seg',label:'Подписи кнопок',default:'short',
@@ -175,7 +281,7 @@ registerPlugin({id:'vat',name:'НДС',description:'Кнопки «+НДС» и 
    a.onSettingsChange(render);
  }},1);
 
-registerPlugin({id:'rnd',name:'Случайное число',description:'Вставляет случайное число с вибро-откликом',version:'1.1',author:'Calc',
+registerPlugin({id:'rnd',name:'Случайное число',description:'Вставляет случайное число с вибро-откликом',version:'1.1',apiVersion:'2.0',author:'Calc',
  settings:{
    min:{type:'number',label:'Минимум',default:1,min:0,max:9999,step:1},
    max:{type:'number',label:'Максимум',default:100,min:1,max:9999,step:1},
@@ -191,199 +297,99 @@ registerPlugin({id:'rnd',name:'Случайное число',description:'Вс�
    }})
  }},1);
 
-registerPlugin({id:'haptic',name:'Вибро',description:'Тест вибрации и диагностика: показывает, почему вибро может не работать',version:'1.0',author:'Calc',
- onLoad(a){a.addButton({label:'📳 Тест',onClick:x=>{const ok=x.vibrate([40,60,40,60,80]);x.toast(ok?'Вибро отправлено — если не чувствуете, проверьте системные настройки':'Вибро заблокировано или выключено в настройках')}});
-  a.addButton({label:'🔍 Диагноз',onClick:x=>{const nat=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.NativeTools,fr=window.self!==window.top;
-   x.toast((nat?'Нативное вибро доступно':'navigator.vibrate: '+(navigator.vibrate?'есть':'нет'))+(fr&&!nat?' · страница во встроенном окне, откройте ссылку напрямую в Chrome':''))}})}},1);
+registerPlugin({id:'haptic',name:'Вибро',description:'Тест вибрации и диагностика',version:'1.0',apiVersion:'2.0',author:'Calc',
+ onLoad(a){
+   a.addButton({label:'📳 Тест',onClick:x=>{const ok=x.vibrate([40,60,40,60,80]);
+     x.toast(ok?'Вибро отправлено — если не чувствуете, проверьте системные настройки':'Вибро заблокировано или выключено в настройках')}});
+   a.addButton({label:'🔍 Диагноз',onClick:x=>{
+     const nat=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.NativeTools,fr=window.self!==window.top;
+     x.toast((nat?'Нативное вибро доступно':'navigator.vibrate: '+(navigator.vibrate?'есть':'нет'))+
+       (fr&&!nat?' · страница во встроенном окне, откройте ссылку напрямую в Chrome':''))}})
+ }},1);
 
-/* загрузка кастомных плагинов и включённых */
-for(const id in custom){try{runCode(custom[id])}catch(e){}}
-enabled=enabled.filter(id=>PL[id]);enabled.forEach(load);
-
-/* ---------- рендер списка плагинов с настройками ---------- */
-function rPlug(){
- const l=$('#plist');l.innerHTML='';
- Object.values(PL).forEach((p,i)=>{
-  const c=document.createElement('div');c.className='card';c.style.animationDelay=i*50+'ms';
-
-  const hasSettings=p.settings&&Object.keys(p.settings).length;
-  c.innerHTML=`
-    <div class="row">
-      <div class="ava"></div>
-      <div class="grow"><b></b><small></small></div>
-      <label class="sw"><input type="checkbox"><i></i></label>
-    </div>
-    ${hasSettings?`<div class="pl-head">
-       <span>Настройки плагина</span>
-       <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
-    </div>
-    <div class="pl-body"></div>`:''}
-  `;
-  c.querySelector('.ava').textContent=(p.name||'?')[0];
-  c.querySelector('b').textContent=p.name||p.id;
-  c.querySelector('small').textContent=(p.description||'')+' · v'+(p.version||'1')+(p.author?' · '+p.author:'');
-
-  const inp=c.querySelector('input[type=checkbox]');
-  inp.checked=enabled.includes(p.id);
-  inp.onchange=()=>{vib();
-    if(inp.checked){enabled.push(p.id);load(p.id)}
-    else{enabled=enabled.filter(x=>x!=p.id);unload(p.id)}
-    LS.set('en',enabled);
-  };
-
-  /* --- Настройки: строим поля сами --- */
-  if(hasSettings){
-   const body=c.querySelector('.pl-body');
-   const head=c.querySelector('.pl-head');
-   head.onclick=()=>{c.classList.toggle('open');vib()};
-   buildSettings(p.id,p.settings,body);
-  }
-
-  /* --- Удаление кастомного плагина --- */
-  if(!BUILTIN.has(p.id)){
-   const d=document.createElement('button');
-   d.className='btn t';d.style.cssText='margin-top:12px;padding:8px 16px;font-size:13px';
-   d.textContent='Удалить';
-   d.onclick=()=>{
-     unload(p.id);delete PL[p.id];delete custom[p.id];
-     delete PVALS[p.id];
-     enabled=enabled.filter(x=>x!=p.id);
-     LS.set('custom',custom);LS.set('en',enabled);LS.set('pvals',PVALS);
-     rPlug();
-   };
-   c.append(d);
-  }
-  l.append(c);
- });
-}
-
-/* Построение UI настроек по описанию из манифеста плагина */
-function buildSettings(pid,defs,root){
- const vals=getVals(pid);
- const set=(k,v)=>{
-   vals[k]=v;saveVals(pid);
-   (PSUBS[pid]||[]).forEach(fn=>{try{fn(k,v,api(pid))}catch(e){toast('Ошибка плагина: '+e.message)}});
- };
- for(const key in defs){
-   const d=defs[key]||{};
-   const wrap=document.createElement('div');wrap.className='set-row';
-   if(d.type!=='bool'&&d.type!=='seg'){
-     const lab=document.createElement('label');lab.textContent=d.label||key;wrap.append(lab);
+/* ---------- Плагин: AI-репетитор «Решения» ---------- */
+registerPlugin({
+ id:'solver',
+ name:'Решения (AI-репетитор)',
+ description:'Отправляет задачу в AI и показывает пошаговый разбор',
+ version:'1.0',
+ apiVersion:'2.0',
+ author:'Calc',
+ settings:{
+   provider:{
+     type:'seg',
+     label:'Провайдер AI',
+     default:'demo',
+     options:[
+       {value:'demo',label:'Демо (оффлайн)'},
+       {value:'gigachat',label:'GigaChat'},
+       {value:'openai',label:'OpenAI'},
+       {value:'custom',label:'Свой сервер'}
+     ],
+     hint:'Демо работает без интернета и решает простые примеры'
+   },
+   apiKey:{type:'text',label:'API-ключ',default:'',placeholder:'вставь ключ провайдера',
+     hint:'Хранится только на этом устройстве'},
+   endpoint:{type:'text',label:'Адрес своего сервера',default:'',placeholder:'https://example.com/solve',
+     hint:'POST {task} → {solution}'},
+   detailed:{type:'bool',label:'Подробный разбор',default:true,hint:'Пошаговое решение вместо просто ответа'}
+ },
+ onLoad(api){
+   function demoSolve(task){
+     const t=task.trim().toLowerCase();
+     let m=t.match(/^(-?\d*\.?\d*)\s*\*?\s*x\s*([+\-])\s*(\d+\.?\d*)\s*=\s*(-?\d+\.?\d*)$/);
+     if(m){
+       const A=(m[1]===''||m[1]==='-')?-1:parseFloat(m[1]);
+       const sign=m[2]==='+'?1:-1;
+       const B=parseFloat(m[3]);
+       const C=parseFloat(m[4]);
+       const x=(C-sign*B)/A;
+       return `Линейное уравнение:\n${A}x ${sign>0?'+':'-'} ${B} = ${C}\n\n`
+             +`Шаг 1. Переносим число вправо:\n${A}x = ${C} ${sign>0?'-':'+'} ${B}\n${A}x = ${C-sign*B}\n\n`
+             +`Шаг 2. Делим обе стороны на ${A}:\nx = ${x}\n\nОтвет: x = ${x}`;
+     }
+     m=t.match(/(\d+\.?\d*)\s*%\s*от\s*(\d+\.?\d*)/);
+     if(m){
+       const p=parseFloat(m[1]),n=parseFloat(m[2]);
+       const r=p*n/100;
+       return `${p}% от ${n}:\n\n${p}% = ${p}/100\n${p}/100 × ${n} = ${r}\n\nОтвет: ${r}`;
+     }
+     try{
+       const v=api.getResult();
+       if(isFinite(v))return `Вычисление:\n${task}\n\nОтвет: ${v}`;
+     }catch(e){}
+     return null;
    }
 
-   if(d.type==='bool'){
-     wrap.innerHTML=`<div class="row"><div class="grow"><label style="margin:0">${d.label||key}</label>
-       ${d.hint?`<small>${d.hint}</small>`:''}</div>
-       <label class="sw"><input type="checkbox"><i></i></label></div>`;
-     const inp=wrap.querySelector('input');inp.checked=!!vals[key];
-     inp.onchange=()=>{set(key,inp.checked);vib()};
-   }
-   else if(d.type==='range'){
-     const min=d.min??0,max=d.max??100,step=d.step??1;
-     const row=document.createElement('div');row.className='row';
-     const inp=document.createElement('input');
-     inp.type='range';inp.min=min;inp.max=max;inp.step=step;inp.value=vals[key]??d.default;
-     inp.style.flex='1';
-     const out=document.createElement('span');out.className='range-val';out.textContent=inp.value;
-     row.append(inp,out);wrap.append(row);
-     inp.oninput=()=>{out.textContent=inp.value};
-     inp.onchange=()=>{set(key,+inp.value);vib()};
-   }
-   else if(d.type==='seg'||d.type==='select'){
-     const el=document.createElement('div');el.className='seg';
-     const opts=Array.isArray(d.options)?d.options:Object.entries(d.options||{}).map(([v,l])=>({value:v,label:l}));
-     opts.forEach(o=>{
-       const b=document.createElement('button');
-       b.dataset.v=o.value;b.textContent=o.label||o.value;
-       if((vals[key]??d.default)==o.value)b.classList.add('on');
-       b.onclick=()=>{
-         [...el.children].forEach(x=>x.classList.remove('on'));
-         b.classList.add('on');set(key,o.value);vib();
-       };
-       el.append(b);
-     });
-     wrap.append(el);
-   }
-   else if(d.type==='text'){
-     const inp=document.createElement('input');inp.type='text';
-     inp.value=vals[key]??d.default??'';inp.placeholder=d.placeholder||'';
-     inp.onchange=()=>{set(key,inp.value);vib()};
-     wrap.append(inp);
-   }
-   else { /* по умолчанию — число */
-     const inp=document.createElement('input');inp.type='number';
-     if(d.min!=null)inp.min=d.min;if(d.max!=null)inp.max=d.max;if(d.step!=null)inp.step=d.step;
-     inp.value=vals[key]??d.default??0;
-     inp.onchange=()=>{set(key,+inp.value);vib()};
-     wrap.append(inp);
-   }
-   if(d.hint&&d.type!=='bool'){const h=document.createElement('small');h.textContent=d.hint;wrap.append(h)}
-   root.append(wrap);
- }
-}
+   async function askAI(task){
+     const provider=api.getSetting('provider');
+     const detailed=api.getSetting('detailed');
+     const prompt=detailed
+       ?`Реши задачу пошагово, на русском, кратко и понятно:\n\n${task}`
+       :`Реши задачу, дай только ответ:\n\n${task}`;
 
-/* ---------- UI редактора плагинов ---------- */
-const TPL=`registerPlugin({
-  id: 'hello',
-  name: 'Мой плагин',
-  description: 'Кнопка 42 и настройки',
-  version: '1.1',
-  author: 'me',
-  settings: {
-    step: { type: 'number', label: 'Шаг', default: 1, min: 1, max: 100, hint: 'На сколько прибавлять' },
-    vib:  { type: 'bool',   label: 'Вибро при нажатии', default: true },
-    color:{ type: 'seg',    label: 'Оттенок', default: 'accent',
-            options: [ {value:'accent',label:'Акцент'}, {value:'soft',label:'Мягкий'} ] }
-  },
-  onLoad(api) {
-    const draw = () => {
-      document.querySelectorAll('[data-plugin="hello"]').forEach(e => e.remove());
-      api.addButton({
-        label: '+'+api.getSetting('step'),
-        onClick: a => {
-          const cur = a.getResult();
-          a.setExpr(String((isNaN(cur) ? 0 : cur) + (+a.getSetting('step'))));
-          if (a.getSetting('vib')) a.vibrate(20);
-        }
-      });
-    };
-    draw();
-    api.onSettingsChange(draw);
-  },
-  onUnload() {}
-});`;
-$('#add').onclick=()=>{$('#code').value=TPL;$('#sheet').classList.add('on')};
-function openCalcText(t,name){if(!/registerPlugin\s*\(/.test(t))return toast('Это не файл плагина'+(name?': '+name:''));
- $('#code').value=t;go('plug');$('#sheet').classList.add('on');vib([15,40,15])}
-window.openCalcText=openCalcText;
-const openCalcFile=f=>f&&f.text().then(t=>openCalcText(t,f.name)).catch(()=>toast('Не удалось прочитать файл'));
-$('#file').onchange=e=>{openCalcFile(e.target.files[0]);e.target.value=''};
-addEventListener('dragover',e=>e.preventDefault());
-addEventListener('drop',e=>{e.preventDefault();openCalcFile(e.dataTransfer.files[0])});
-if('launchQueue' in window)launchQueue.setConsumer(async p=>{if(p.files&&p.files[0])openCalcFile(await p.files[0].getFile())});
-$('#cancel').onclick=()=>$('#sheet').classList.remove('on');
-$('#sheet').onclick=e=>{if(e.target.id=='sheet')e.target.classList.remove('on')};
-$('#inst').onclick=()=>{const src=$('#code').value;let id;
- try{runCode(src);id=Object.keys(PL).find(k=>!BUILTIN.has(k)&&PL[k]&&!PL[k]._on&&!custom[k]);}catch(e){return toast('Ошибка: '+e.message)}
- if(!id)return toast('Плагин не зарегистрирован');custom[id]=src;LS.set('custom',custom);if(!enabled.includes(id))enabled.push(id);LS.set('en',enabled);load(id);
- $('#sheet').classList.remove('on');rPlug();toast('Плагин установлен')};
+     if(provider==='demo'){
+       const r=demoSolve(task);
+       if(r)return {text:r,provider:'Демо'};
+       throw new Error('Демо не умеет такое. Выбери GigaChat/OpenAI в настройках.');
+     }
 
-/* ---------- настройки ---------- */
-function seg(id,key,conv){const el=$('#'+id);const sync=()=>$$('#'+id+' button').forEach(b=>b.classList.toggle('on',conv(b.dataset.v)==S[key]));
- el.onclick=e=>{const b=e.target.closest('button');if(!b)return;S[key]=conv(b.dataset.v);saveS();sync();applyTheme();vib()};sync()}
-seg('mode','mode',v=>v);seg('pow','pow',v=>+v);
-HUES.forEach(([h,n])=>{const b=document.createElement('button');b.title=n;b.dataset.h=h;
- b.style.background=`hsl(${h=='sys'?sysHue():h} 60% 50%)`;if(h=='sys')b.textContent='A',b.style.color='#fff',b.style.fontWeight='700';
- b.onclick=()=>{S.hue=h;saveS();applyTheme();sw();vib()};$('#sws').append(b)});
-const sw=()=>$$('#sws button').forEach(b=>b.classList.toggle('on',b.dataset.h==S.hue));sw();
-$('#vib').checked=S.vib;$('#vib').onchange=e=>{S.vib=e.target.checked;saveS();vib()};
-const an=()=>document.body.classList.toggle('noanim',!S.anim);
-$('#anim').checked=S.anim;$('#anim').onchange=e=>{S.anim=e.target.checked;saveS();an()};an();
-applyTheme();upd();
+     if(provider==='gigachat'){
+       const key=api.getSetting('apiKey');
+       if(!key)throw new Error('Укажи API-ключ GigaChat в настройках плагина');
+       const r=await fetch('https://gigachat.devices.sberbank.ru/api/v1/chat/completions',{
+         method:'POST',
+         headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+         body:JSON.stringify({model:'GigaChat',messages:[{role:'user',content:prompt}]})
+       });
+       if(!r.ok)throw new Error('GigaChat: '+r.status);
+       const j=await r.json();
+       return {text:j.choices?.[0]?.message?.content||'Пусто',provider:'GigaChat'};
+     }
 
-/* ---------- нативный режим (APK): цвета системы, файлы .calc ---------- */
-(function(){const N=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.NativeTools;if(!N)return;
- const col=()=>N.getColors().then(r=>{PAL=r;applyTheme()}).catch(()=>{});
- col();document.addEventListener('visibilitychange',()=>{if(!document.hidden)col()});
- N.getPending().then(r=>{if(r&&r.text)openCalcText(r.text,r.name)}).catch(()=>{});
-})();
+     if(provider==='openai'){
+       const key=api.getSetting('apiKey');
+       if(!key)throw new Error('Укажи API-ключ OpenAI в настройках плагина');
+       const r=await fetch('https://api.openai.com/v1/chat/completions',{
+         method:'POST',
+         headers:
