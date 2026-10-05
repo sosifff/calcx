@@ -6,17 +6,21 @@
 <title>Калькулятор</title>
 <link rel="stylesheet" href="style.css"></head><body>
 <div id="app">
-<main>
+<main id="main">
  <section class="page on" id="p-calc"><div id="calc" style="height:100%">
   <div id="disp"><div id="ex">0</div><div id="rs"></div></div>
   <div id="extra"></div><div id="keys"></div></div></section>
  <section class="page" id="p-hist"><h1>История</h1><div id="hist"></div></section>
  <section class="page" id="p-plug"><h1>Плагины</h1><div id="plist"></div>
-  <div class="row" style="margin:4px 0 16px"><button class="btn grow" id="add">＋ Вставить код</button><label class="btn t grow" id="open" for="file" style="text-align:center;cursor:pointer">📂 Открыть .calc</label></div>
+  <div class="row" style="margin:4px 0 16px">
+   <button class="btn grow" id="add">＋ Вставить код</button>
+   <label class="btn t grow" id="open" for="file" style="text-align:center;cursor:pointer">📂 Открыть .calc</label>
+  </div>
   <input type="file" id="file" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none"></section>
  <section class="page" id="p-set"><h1>Настройки</h1>
   <div class="card"><b>Тема</b><div class="seg" id="mode"><button data-v="auto">Системная</button><button data-v="light">Светлая</button><button data-v="dark">Тёмная</button></div></div>
   <div class="card"><b>Цвет</b><small>Системный акцент или свой оттенок</small><div class="sws" id="sws"></div></div>
+  <div class="card"><b>Тема плагина</b><small>Свои темы, установленные плагинами</small><div id="plugin-themes" class="sws"></div></div>
   <div class="card"><div class="row"><div class="grow"><b>Вибро-отклик</b><small>Работает на Android</small></div><label class="sw"><input type="checkbox" id="vib"><i></i></label></div>
    <div class="seg" id="pow"><button data-v="0">Слабая</button><button data-v="1">Средняя</button><button data-v="2">Сильная</button></div></div>
   <div class="card"><div class="row"><div class="grow"><b>Анимации</b></div><label class="sw"><input type="checkbox" id="anim"><i></i></label></div></div>
@@ -25,6 +29,14 @@
 </main>
 <nav id="nav"></nav>
 </div>
+
+<!-- контейнер для модалок плагинов -->
+<div id="plugin-modals"></div>
+<!-- контейнер для оверлеев (загрузки, эффекты) -->
+<div id="plugin-overlays"></div>
+<!-- контейнер для системных уведомлений -->
+<div id="plugin-notifications"></div>
+
 <div id="sheet"><div><h1 style="margin-top:0">Новый плагин</h1>
  <small style="color:var(--tx2);display:block;margin-bottom:10px">Код плагина — это JavaScript. Ставьте только то, чему доверяете.</small>
  <textarea id="code" spellcheck="false"></textarea>
