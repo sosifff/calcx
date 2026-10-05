@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101410">
+<title>Калькулятор</title>
+<link rel="stylesheet" href="style.css"></head><body>
+<div id="app">
+<main>
+ <section class="page on" id="p-calc"><div id="calc" style="height:100%">
+  <div id="disp"><div id="ex">0</div><div id="rs"></div></div>
+  <div id="extra"></div><div id="keys"></div></div></section>
+ <section class="page" id="p-hist"><h1>История</h1><div id="hist"></div></section>
+ <section class="page" id="p-plug"><h1>Плагины</h1><div id="plist"></div>
+  <div class="row" style="margin:4px 0 16px"><button class="btn grow" id="add">＋ Вставить код</button><label class="btn t grow" id="open" for="file" style="text-align:center;cursor:pointer">📂 Открыть .calc</label></div>
+  <input type="file" id="file" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none"></section>
+ <section class="page" id="p-set"><h1>Настройки</h1>
+  <div class="card"><b>Тема</b><div class="seg" id="mode"><button data-v="auto">Системная</button><button data-v="light">Светлая</button><button data-v="dark">Тёмная</button></div></div>
+  <div class="card"><b>Цвет</b><small>Системный акцент или свой оттенок</small><div class="sws" id="sws"></div></div>
+  <div class="card"><div class="row"><div class="grow"><b>Вибро-отклик</b><small>Работает на Android</small></div><label class="sw"><input type="checkbox" id="vib"><i></i></label></div>
+   <div class="seg" id="pow"><button data-v="0">Слабая</button><button data-v="1">Средняя</button><button data-v="2">Сильная</button></div></div>
+  <div class="card"><div class="row"><div class="grow"><b>Анимации</b></div><label class="sw"><input type="checkbox" id="anim"><i></i></label></div></div>
+ </section>
+</main>
+<nav id="nav"></nav>
+</div>
+<div id="sheet"><div><h1 style="margin-top:0">Новый плагин</h1>
+ <small style="color:var(--tx2);display:block;margin-bottom:10px">Код плагина — это JavaScript. Ставьте только то, чему доверяете.</small>
+ <textarea id="code" spellcheck="false"></textarea>
+ <div class="row" style="margin-top:14px"><button class="btn t grow" id="cancel">Отмена</button><button class="btn grow" id="inst">Установить</button></div></div></div>
+<div id="toast"></div>
+<script src="app.js"></script></body></html>
