@@ -20,12 +20,24 @@ h1{font-size:28px;font-weight:500;margin:8px 4px 16px}
 #extra:empty{display:none}
 #extra::-webkit-scrollbar{display:none}
 #keys{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;grid-auto-rows:minmax(52px,8.6vh)}
-.k{position:relative;overflow:hidden;border:0;border-radius:30px;font-size:26px;background:var(--sc);color:var(--tx);cursor:pointer;transition:border-radius .22s,transform .18s cubic-bezier(.3,1.6,.5,1),background .3s;animation:in .5s backwards}
+
+/* --- клавиши: всё в ролях Material You, без пестроты --- */
+.k{position:relative;overflow:hidden;border:0;border-radius:30px;font-size:26px;
+   background:var(--sc);color:var(--tx);cursor:pointer;
+   transition:border-radius .22s,transform .18s cubic-bezier(.3,1.6,.5,1),background .3s;
+   animation:in .5s backwards}
 .k:active{border-radius:14px;transform:scale(.92)}
+
+/* операторы — вторичный контейнер (мягкий акцент) */
 .k.op{background:var(--pc);color:var(--onpc)}
+/* служебные (AC, (), %, ⌫) — третичный контейнер */
 .k.fn{background:var(--tc);color:var(--ontc)}
+/* равно — primary */
 .k.eq{background:var(--pr);color:var(--onpr)}
-.k.chip{flex:none;height:42px;padding:0 18px;border-radius:21px;font-size:16px;animation:none}
+/* плагинные кнопки — тот же вторичный контейнер, что и операторы */
+.k.chip{flex:none;height:42px;padding:0 18px;border-radius:21px;font-size:16px;animation:none;
+        background:var(--pc);color:var(--onpc)}
+
 @keyframes in{from{opacity:0;transform:translateY(24px) scale(.8)}}
 .rp{position:absolute;border-radius:50%;background:currentColor;opacity:.28;transform:scale(0);animation:rp .55s ease-out forwards;pointer-events:none}
 @keyframes rp{to{transform:scale(1);opacity:0}}
@@ -75,6 +87,33 @@ button{touch-action:manipulation;font:inherit}
 #disp{cursor:pointer}
 .k{will-change:transform}
 :focus-visible{outline:3px solid var(--pr);outline-offset:2px}
+
+/* ---------- настройки плагинов ---------- */
+.pl-head{display:flex;align-items:center;gap:12px;cursor:pointer;
+  margin-top:14px;padding-top:12px;border-top:1px solid var(--ol)}
+.pl-head span{color:var(--tx2);font-size:13px}
+.pl-head .chev{margin-left:auto;transition:transform .25s;color:var(--tx2)}
+.card.open .pl-head .chev{transform:rotate(180deg)}
+.pl-body{display:none;margin-top:14px;padding-top:12px;border-top:1px solid var(--ol);
+         flex-direction:column;gap:14px}
+.card.open .pl-body{display:flex}
+.set-row{display:flex;flex-direction:column;gap:6px}
+.set-row>label{font-size:14px;color:var(--tx);font-weight:500}
+.set-row>small{color:var(--tx2);font-size:12px;line-height:1.35}
+.set-row input[type=text],
+.set-row input[type=number],
+.set-row textarea{
+  width:100%;border:1px solid var(--ol);background:var(--sf);color:var(--tx);
+  border-radius:14px;padding:10px 12px;font:14px/1.3 system-ui,sans-serif;user-select:text;
+  transition:border-color .2s}
+.set-row input[type=text]:focus,
+.set-row input[type=number]:focus,
+.set-row textarea:focus{border-color:var(--pr);outline:none}
+.set-row textarea{min-height:70px;resize:vertical;font-family:ui-monospace,Menlo,monospace;font-size:13px}
+.set-row input[type=range]{width:100%;accent-color:var(--pr);background:transparent;height:24px}
+.set-row .range-val{font-variant-numeric:tabular-nums;color:var(--tx2);font-size:13px;min-width:32px;text-align:right}
+.set-row .seg{margin-top:0}
+
 @media (orientation:landscape) and (max-height:520px){
  #calc{display:grid!important;grid-template-columns:1fr 1.4fr;grid-template-rows:auto 1fr;gap:8px 16px}
  #disp{grid-row:1/3}#extra{grid-column:2;grid-row:1}#keys{grid-column:2;grid-row:2;grid-auto-rows:minmax(36px,1fr);gap:6px}
