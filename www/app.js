@@ -3,6 +3,7 @@ const LS={get(k,d){try{const v=localStorage.getItem('calc_'+k);return v?JSON.par
 const S=Object.assign({mode:'auto',hue:'sys',vib:true,pow:1,anim:!matchMedia('(prefers-reduced-motion: reduce)').matches},LS.get('s',{}));
 const saveS=()=>LS.set('s',S);
 let PAL=null;
+
 /* ---------- вибро / тосты ---------- */
 const vib=(m)=>{if(!S.vib)return false;const p=m||[8,16,28][S.pow];
  try{const N=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.NativeTools;
@@ -10,6 +11,7 @@ const vib=(m)=>{if(!S.vib)return false;const p=m||[8,16,28][S.pow];
   if(navigator.vibrate)return navigator.vibrate(p)}catch(e){}return false};
 document.addEventListener('click',()=>{if(window._vf){window._vf=0;vib()}});
 let tt;const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2200)};
+
 /* ---------- тема (Material You) ---------- */
 function sysHue(){try{const d=document.createElement('div');d.style.color='AccentColor';document.body.append(d);
  const [r,g,b]=getComputedStyle(d).color.match(/[\d.]+/g).map(Number).map(x=>x/255);d.remove();
@@ -28,6 +30,7 @@ function applyTheme(){
  r.colorScheme=dark?'dark':'light';$('meta[name=theme-color]').content=p.bg;
 }
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);
+
 /* ---------- вычисления ---------- */
 const D=Math.PI/180,F={sin:x=>Math.sin(x*D),cos:x=>Math.cos(x*D),tan:x=>Math.tan(x*D),ln:Math.log,log:Math.log10,sqrt:Math.sqrt,'√':Math.sqrt,abs:Math.abs};
 function ev(s){
@@ -43,6 +46,7 @@ function ev(s){
  const v=pe();if(i<t.length)throw 0;return v}
 const fmt=n=>{if(!isFinite(n))throw 0;const s=+n.toPrecision(12);
  return(Math.abs(s)>=1e15||(s!==0&&Math.abs(s)<1e-9))?s.toExponential(6).replace(/\.?0+e/,'e'):String(s).replace('-','−')};
+
 /* ---------- калькулятор ---------- */
 let expr=LS.get('ex',''),done=false,hist=LS.get('h',[]);
 const isOp=c=>'+−×÷^'.includes(c);
@@ -74,8 +78,9 @@ document.addEventListener('pointerdown',e=>{const b=e.target.closest('.k,.btn,.h
  if(!b.closest('#keys')||b.dataset.k!='=')window._vf=!vib();
  if(!b.classList.contains('k'))return;const r=b.getBoundingClientRect(),z=Math.max(r.width,r.height)*2.2,s=document.createElement('span');
  s.className='rp';s.style.cssText=`width:${z}px;height:${z}px;left:${e.clientX-r.left-z/2}px;top:${e.clientY-r.top-z/2}px`;b.append(s);setTimeout(()=>s.remove(),600)});
-document.addEventListener('keydown',e=>{if(e.target.tagName=='TEXTAREA')return;const m={'*':'×','/':'÷','-':'−','Enter':'=','Backspace':'⌫','Escape':'AC'};const k=m[e.key]||e.key;
+document.addEventListener('keydown',e=>{if(e.target.tagName=='TEXTAREA'||e.target.tagName=='INPUT')return;const m={'*':'×','/':'÷','-':'−','Enter':'=','Backspace':'⌫','Escape':'AC'};const k=m[e.key]||e.key;
  if(/^[\d.+%^]$/.test(k)||'×÷−=⌫AC'.includes(k)&&k.length<=2||k=='('||k==')'){e.preventDefault();press(k=='('||k==')'?'()':k)}});
+
 /* ---------- вкладки ---------- */
 const ICO={calc:'<path d="M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2zm1 3v3h8V6H8zm0 6v2h2v-2H8zm4 0v2h2v-2h-2zm4 0v2h2v-2h-2zM8 16v2h2v-2H8zm4 0v2h2v-2h-2zm4 0v2h2v-2h-2z"/>',
  hist:'<path d="M12 3a9 9 0 100 18 9 9 0 000-18zm1 4v4.6l3.4 2-.8 1.4L11 12.4V7h2z"/>',
@@ -90,49 +95,260 @@ function rHist(){const h=$('#hist');h.innerHTML=hist.length?'':'<div class="empt
  hist.forEach((x,i)=>{const d=document.createElement('div');d.className='card hi';d.style.animationDelay=i*30+'ms';d.innerHTML=`<small></small><b></b>`;
   d.children[0].textContent=x.e+' =';d.children[1].textContent=x.r;d.onclick=()=>{expr=x.r;done=true;upd();go('calc')};h.append(d)});
  if(hist.length){const c=document.createElement('button');c.className='btn t';c.style.width='100%';c.textContent='Очистить';c.onclick=()=>{hist=[];LS.set('h',hist);rHist()};h.append(c)}}
+
 /* ---------- система плагинов ---------- */
-const PL={},BUILTIN=new Set(),custom=LS.get('custom',{});let enabled=LS.get('en',['sci','haptic']);
+const PL={},BUILTIN=new Set(),custom=LS.get('custom',{});
+let enabled=LS.get('en',['sci','haptic']);
+
+/* значения настроек плагинов: {pluginId: {key: value}} */
+const PVALS=LS.get('pvals',{});
+const getVals=id=>PVALS[id]||(PVALS[id]={});
+const saveVals=id=>{LS.set('pvals',PVALS)};
+/* подписчики на изменение настроек: {pluginId: [fn, fn]} */
+const PSUBS={};
+
 const api=id=>({
  addButton(o){const b=document.createElement('button');b.className='k fn chip';b.textContent=o.label;b.dataset.plugin=id;
   b.onclick=()=>{try{o.onClick?o.onClick(api(id)):ins(o.insert||o.label)}catch(e){toast('Ошибка плагина: '+e.message)}};$('#extra').append(b)},
  addFunction(n,f){if(!/^[a-z]+$/.test(n))throw new Error('имя функции: только a-z');F[n]=f;(PL[id]._fn=PL[id]._fn||[]).push(n)},
  insert:s=>ins(s),getExpr:()=>expr,getResult:()=>{try{return ev(expr)}catch(e){return NaN}},
- setExpr:s=>{expr=String(s);done=false;upd()},vibrate:m=>vib(m),toast});
+ setExpr:s=>{expr=String(s);done=false;upd()},vibrate:m=>vib(m),toast,
+
+ /* --- доступ к настройкам --- */
+ getSetting(k){return getVals(id)[k]},
+ getAllSettings(){return {...getVals(id)}},
+ setSetting(k,v){
+   getVals(id)[k]=v;saveVals(id);
+   (PSUBS[id]||[]).forEach(fn=>{try{fn(k,v,api(id))}catch(e){toast('Ошибка плагина: '+e.message)}})
+ },
+ onSettingsChange(fn){(PSUBS[id]=PSUBS[id]||[]).push(fn)}
+});
+
 function registerPlugin(d,builtin){if(!d||!d.id)throw new Error('нужен id');PL[d.id]=d;if(builtin)BUILTIN.add(d.id);}
-function load(id){const p=PL[id];if(!p||p._on)return;try{p.onLoad&&p.onLoad(api(id));p._on=1}catch(e){toast('Плагин «'+p.name+'»: '+e.message)}}
-function unload(id){const p=PL[id];if(!p)return;try{p.onUnload&&p.onUnload(api(id))}catch(e){}$$(`[data-plugin="${id}"]`).forEach(e=>e.remove());(p._fn||[]).forEach(n=>delete F[n]);p._fn=0;p._on=0}
+
+/* применить дефолты из settings, если пользователь ещё ничего не менял */
+function applyDefaults(id){
+ const p=PL[id];if(!p||!p.settings)return;
+ const v=getVals(id);let changed=false;
+ for(const k in p.settings){
+   if(!(k in v)){v[k]=p.settings[k].default;changed=true}
+ }
+ if(changed)saveVals(id);
+}
+
+function load(id){
+ const p=PL[id];if(!p)return;
+ applyDefaults(id);
+ if(p._on)return;
+ try{p.onLoad&&p.onLoad(api(id));p._on=1}
+ catch(e){toast('Плагин «'+(p.name||id)+'»: '+e.message)}
+}
+function unload(id){
+ const p=PL[id];if(!p)return;
+ try{p.onUnload&&p.onUnload(api(id))}catch(e){}
+ $$(`[data-plugin="${id}"]`).forEach(e=>e.remove());
+ (p._fn||[]).forEach(n=>delete F[n]);p._fn=0;p._on=0;PSUBS[id]=[];
+}
 function runCode(src){new Function('registerPlugin',src)(d=>registerPlugin(d,false))}
+
+/* ---------- встроенные плагины ---------- */
 registerPlugin({id:'sci',name:'Научный режим',description:'sin, cos, tan (в градусах), ln, log, √, π и степень',version:'1.0',author:'Calc',
  onLoad(a){[['sin','sin('],['cos','cos('],['tan','tan('],['ln','ln('],['log','log('],['√','√('],['π','π'],['xʸ','^']].forEach(([l,i])=>a.addButton({label:l,insert:i}))}},1);
-registerPlugin({id:'vat',name:'НДС 20%',description:'Кнопки «+НДС» и «−НДС» применяют 20% к результату',version:'1.0',author:'Calc',
- onLoad(a){const f=k=>x=>{const v=x.getResult();if(isNaN(v))return x.toast('Нечего считать');x.setExpr(fmt(v*k))};
-  a.addButton({label:'+НДС',onClick:f(1.2)});a.addButton({label:'−НДС',onClick:f(1/1.2)})}},1);
-registerPlugin({id:'rnd',name:'Случайное число',description:'Вставляет случайное число от 1 до 100 с вибро-откликом',version:'1.0',author:'Calc',
- onLoad(a){a.addButton({label:'🎲 rnd',onClick:x=>{x.insert(String(1+Math.floor(Math.random()*100)));x.vibrate([10,30,10,30])}})}},1);
+
+registerPlugin({id:'vat',name:'НДС',description:'Кнопки «+НДС» и «−НДС» с настраиваемой ставкой',version:'1.1',author:'Calc',
+ settings:{
+   rate:{type:'number',label:'Ставка, %',default:20,min:0,max:100,step:0.5,hint:'Например, 20 для России'},
+   labelMode:{type:'seg',label:'Подписи кнопок',default:'short',
+     options:[{value:'short',label:'+НДС'},{value:'full',label:'С налогом'}]}
+ },
+ onLoad(a){
+   const render=()=>{
+     $$('[data-plugin="vat"]').forEach(e=>e.remove());
+     const rate=+a.getSetting('rate')||20;
+     const k=1+rate/100;
+     const short=a.getSetting('labelMode')==='short';
+     const f=mul=>x=>{const v=x.getResult();if(isNaN(v))return x.toast('Нечего считать');x.setExpr(fmt(v*mul))};
+     a.addButton({label:(short?'+НДС':'С налогом'),onClick:f(k)});
+     a.addButton({label:(short?'−НДС':'Без налога'),onClick:f(1/k)});
+   };
+   render();
+   a.onSettingsChange(render);
+ }},1);
+
+registerPlugin({id:'rnd',name:'Случайное число',description:'Вставляет случайное число с вибро-откликом',version:'1.1',author:'Calc',
+ settings:{
+   min:{type:'number',label:'Минимум',default:1,min:0,max:9999,step:1},
+   max:{type:'number',label:'Максимум',default:100,min:1,max:9999,step:1},
+   vibOn:{type:'bool',label:'Вибро при вставке',default:true}
+ },
+ onLoad(a){
+   a.addButton({label:'🎲 rnd',onClick:x=>{
+     let lo=+x.getSetting('min')||1, hi=+x.getSetting('max')||100;
+     if(hi<lo){const t=lo;lo=hi;hi=t}
+     const v=lo+Math.floor(Math.random()*(hi-lo+1));
+     x.insert(String(v));
+     if(x.getSetting('vibOn'))x.vibrate([10,30,10,30]);
+   }})
+ }},1);
+
 registerPlugin({id:'haptic',name:'Вибро',description:'Тест вибрации и диагностика: показывает, почему вибро может не работать',version:'1.0',author:'Calc',
  onLoad(a){a.addButton({label:'📳 Тест',onClick:x=>{const ok=x.vibrate([40,60,40,60,80]);x.toast(ok?'Вибро отправлено — если не чувствуете, проверьте системные настройки':'Вибро заблокировано или выключено в настройках')}});
   a.addButton({label:'🔍 Диагноз',onClick:x=>{const nat=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.NativeTools,fr=window.self!==window.top;
    x.toast((nat?'Нативное вибро доступно':'navigator.vibrate: '+(navigator.vibrate?'есть':'нет'))+(fr&&!nat?' · страница во встроенном окне, откройте ссылку напрямую в Chrome':''))}})}},1);
+
+/* загрузка кастомных плагинов и включённых */
 for(const id in custom){try{runCode(custom[id])}catch(e){}}
 enabled=enabled.filter(id=>PL[id]);enabled.forEach(load);
-function rPlug(){const l=$('#plist');l.innerHTML='';Object.values(PL).forEach((p,i)=>{
- const c=document.createElement('div');c.className='card';c.style.animationDelay=i*50+'ms';
- c.innerHTML=`<div class="row"><div class="ava"></div><div class="grow"><b></b><small></small></div><label class="sw"><input type="checkbox"><i></i></label></div>`;
- c.querySelector('.ava').textContent=(p.name||'?')[0];c.querySelector('b').textContent=p.name||p.id;
- c.querySelector('small').textContent=(p.description||'')+' · v'+(p.version||'1')+(p.author?' · '+p.author:'');
- const inp=c.querySelector('input');inp.checked=enabled.includes(p.id);
- inp.onchange=()=>{vib();if(inp.checked){enabled.push(p.id);load(p.id)}else{enabled=enabled.filter(x=>x!=p.id);unload(p.id)}LS.set('en',enabled)};
- if(!BUILTIN.has(p.id)){const d=document.createElement('button');d.className='btn t';d.style.cssText='margin-top:12px;padding:8px 16px;font-size:13px';d.textContent='Удалить';
-  d.onclick=()=>{unload(p.id);delete PL[p.id];delete custom[p.id];enabled=enabled.filter(x=>x!=p.id);LS.set('custom',custom);LS.set('en',enabled);rPlug()};c.append(d)}
- l.append(c)})}
+
+/* ---------- рендер списка плагинов с настройками ---------- */
+function rPlug(){
+ const l=$('#plist');l.innerHTML='';
+ Object.values(PL).forEach((p,i)=>{
+  const c=document.createElement('div');c.className='card';c.style.animationDelay=i*50+'ms';
+
+  const hasSettings=p.settings&&Object.keys(p.settings).length;
+  c.innerHTML=`
+    <div class="row">
+      <div class="ava"></div>
+      <div class="grow"><b></b><small></small></div>
+      <label class="sw"><input type="checkbox"><i></i></label>
+    </div>
+    ${hasSettings?`<div class="pl-head">
+       <span>Настройки плагина</span>
+       <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+    </div>
+    <div class="pl-body"></div>`:''}
+  `;
+  c.querySelector('.ava').textContent=(p.name||'?')[0];
+  c.querySelector('b').textContent=p.name||p.id;
+  c.querySelector('small').textContent=(p.description||'')+' · v'+(p.version||'1')+(p.author?' · '+p.author:'');
+
+  const inp=c.querySelector('input[type=checkbox]');
+  inp.checked=enabled.includes(p.id);
+  inp.onchange=()=>{vib();
+    if(inp.checked){enabled.push(p.id);load(p.id)}
+    else{enabled=enabled.filter(x=>x!=p.id);unload(p.id)}
+    LS.set('en',enabled);
+  };
+
+  /* --- Настройки: строим поля сами --- */
+  if(hasSettings){
+   const body=c.querySelector('.pl-body');
+   const head=c.querySelector('.pl-head');
+   head.onclick=()=>{c.classList.toggle('open');vib()};
+   buildSettings(p.id,p.settings,body);
+  }
+
+  /* --- Удаление кастомного плагина --- */
+  if(!BUILTIN.has(p.id)){
+   const d=document.createElement('button');
+   d.className='btn t';d.style.cssText='margin-top:12px;padding:8px 16px;font-size:13px';
+   d.textContent='Удалить';
+   d.onclick=()=>{
+     unload(p.id);delete PL[p.id];delete custom[p.id];
+     delete PVALS[p.id];
+     enabled=enabled.filter(x=>x!=p.id);
+     LS.set('custom',custom);LS.set('en',enabled);LS.set('pvals',PVALS);
+     rPlug();
+   };
+   c.append(d);
+  }
+  l.append(c);
+ });
+}
+
+/* Построение UI настроек по описанию из манифеста плагина */
+function buildSettings(pid,defs,root){
+ const vals=getVals(pid);
+ const set=(k,v)=>{
+   vals[k]=v;saveVals(pid);
+   (PSUBS[pid]||[]).forEach(fn=>{try{fn(k,v,api(pid))}catch(e){toast('Ошибка плагина: '+e.message)}});
+ };
+ for(const key in defs){
+   const d=defs[key]||{};
+   const wrap=document.createElement('div');wrap.className='set-row';
+   if(d.type!=='bool'&&d.type!=='seg'){
+     const lab=document.createElement('label');lab.textContent=d.label||key;wrap.append(lab);
+   }
+
+   if(d.type==='bool'){
+     wrap.innerHTML=`<div class="row"><div class="grow"><label style="margin:0">${d.label||key}</label>
+       ${d.hint?`<small>${d.hint}</small>`:''}</div>
+       <label class="sw"><input type="checkbox"><i></i></label></div>`;
+     const inp=wrap.querySelector('input');inp.checked=!!vals[key];
+     inp.onchange=()=>{set(key,inp.checked);vib()};
+   }
+   else if(d.type==='range'){
+     const min=d.min??0,max=d.max??100,step=d.step??1;
+     const row=document.createElement('div');row.className='row';
+     const inp=document.createElement('input');
+     inp.type='range';inp.min=min;inp.max=max;inp.step=step;inp.value=vals[key]??d.default;
+     inp.style.flex='1';
+     const out=document.createElement('span');out.className='range-val';out.textContent=inp.value;
+     row.append(inp,out);wrap.append(row);
+     inp.oninput=()=>{out.textContent=inp.value};
+     inp.onchange=()=>{set(key,+inp.value);vib()};
+   }
+   else if(d.type==='seg'||d.type==='select'){
+     const el=document.createElement('div');el.className='seg';
+     const opts=Array.isArray(d.options)?d.options:Object.entries(d.options||{}).map(([v,l])=>({value:v,label:l}));
+     opts.forEach(o=>{
+       const b=document.createElement('button');
+       b.dataset.v=o.value;b.textContent=o.label||o.value;
+       if((vals[key]??d.default)==o.value)b.classList.add('on');
+       b.onclick=()=>{
+         [...el.children].forEach(x=>x.classList.remove('on'));
+         b.classList.add('on');set(key,o.value);vib();
+       };
+       el.append(b);
+     });
+     wrap.append(el);
+   }
+   else if(d.type==='text'){
+     const inp=document.createElement('input');inp.type='text';
+     inp.value=vals[key]??d.default??'';inp.placeholder=d.placeholder||'';
+     inp.onchange=()=>{set(key,inp.value);vib()};
+     wrap.append(inp);
+   }
+   else { /* по умолчанию — число */
+     const inp=document.createElement('input');inp.type='number';
+     if(d.min!=null)inp.min=d.min;if(d.max!=null)inp.max=d.max;if(d.step!=null)inp.step=d.step;
+     inp.value=vals[key]??d.default??0;
+     inp.onchange=()=>{set(key,+inp.value);vib()};
+     wrap.append(inp);
+   }
+   if(d.hint&&d.type!=='bool'){const h=document.createElement('small');h.textContent=d.hint;wrap.append(h)}
+   root.append(wrap);
+ }
+}
+
+/* ---------- UI редактора плагинов ---------- */
 const TPL=`registerPlugin({
   id: 'hello',
   name: 'Мой плагин',
-  description: 'Добавляет кнопку 42',
-  version: '1.0',
+  description: 'Кнопка 42 и настройки',
+  version: '1.1',
   author: 'me',
+  settings: {
+    step: { type: 'number', label: 'Шаг', default: 1, min: 1, max: 100, hint: 'На сколько прибавлять' },
+    vib:  { type: 'bool',   label: 'Вибро при нажатии', default: true },
+    color:{ type: 'seg',    label: 'Оттенок', default: 'accent',
+            options: [ {value:'accent',label:'Акцент'}, {value:'soft',label:'Мягкий'} ] }
+  },
   onLoad(api) {
-    api.addButton({ label: '42', onClick: a => { a.insert('42'); a.vibrate(20); } });
+    const draw = () => {
+      document.querySelectorAll('[data-plugin="hello"]').forEach(e => e.remove());
+      api.addButton({
+        label: '+'+api.getSetting('step'),
+        onClick: a => {
+          const cur = a.getResult();
+          a.setExpr(String((isNaN(cur) ? 0 : cur) + (+a.getSetting('step'))));
+          if (a.getSetting('vib')) a.vibrate(20);
+        }
+      });
+    };
+    draw();
+    api.onSettingsChange(draw);
   },
   onUnload() {}
 });`;
@@ -151,6 +367,7 @@ $('#inst').onclick=()=>{const src=$('#code').value;let id;
  try{runCode(src);id=Object.keys(PL).find(k=>!BUILTIN.has(k)&&PL[k]&&!PL[k]._on&&!custom[k]);}catch(e){return toast('Ошибка: '+e.message)}
  if(!id)return toast('Плагин не зарегистрирован');custom[id]=src;LS.set('custom',custom);if(!enabled.includes(id))enabled.push(id);LS.set('en',enabled);load(id);
  $('#sheet').classList.remove('on');rPlug();toast('Плагин установлен')};
+
 /* ---------- настройки ---------- */
 function seg(id,key,conv){const el=$('#'+id);const sync=()=>$$('#'+id+' button').forEach(b=>b.classList.toggle('on',conv(b.dataset.v)==S[key]));
  el.onclick=e=>{const b=e.target.closest('button');if(!b)return;S[key]=conv(b.dataset.v);saveS();sync();applyTheme();vib()};sync()}
