@@ -1,5 +1,6 @@
 /* =========================================================
    CalcX — ядро с системой плагинов API 3.0
+   + блок «Связаться / Поддержать» на странице Плагинов
    ========================================================= */
 (function(){
 'use strict';
@@ -8,6 +9,11 @@
    КОНСТАНТЫ ЯДРА
    ========================================================= */
 const API_VERSION = '3.0';
+
+/* Контакт автора и реквизиты поддержки */
+const CONTACT_URL   = 'https://t.me/xcnak';
+const CONTACT_LABEL = '@xcnak';
+const DONATE_CARD   = '2202206254152148';
 
 /* =========================================================
    УТИЛИТЫ
@@ -72,7 +78,6 @@ const toast = m => {
   tt = setTimeout(() => t.classList.remove('on'), 2200);
 };
 
-/* глобальный перехват ошибок */
 window.addEventListener('error', e => {
   if (e && e.message && e.message !== 'Script error.') {
     try { toast('Ошибка: ' + e.message); } catch (x) {}
@@ -158,7 +163,6 @@ function applyTheme(){
     const mt = document.querySelector('meta[name=theme-color]');
     if (mt) mt.content = p.bg;
 
-    /* тема от плагина — накладывается поверх */
     if (S.pluginTheme && THEMES[S.pluginTheme]) {
       const t2 = THEMES[S.pluginTheme];
       const vars = dark ? t2.dark : t2.light;
@@ -277,7 +281,6 @@ function ins(s){
 }
 
 function press(v){
-  /* даём плагинам перехватить */
   const hook = { key: v, expr, cancel: false };
   emit('calc:press', hook);
   if (hook.cancel) return;
@@ -379,7 +382,6 @@ if (keysEl) {
   ['pointerup','pointercancel','pointerleave'].forEach(n => keysEl.addEventListener(n, lpStop));
 }
 
-/* долгий тап по дисплею — контекстное меню результата */
 const dispEl = $('#disp');
 if (dispEl) {
   let holdT;
@@ -408,7 +410,6 @@ if (dispEl) {
   });
 }
 
-/* ripple-эффект */
 document.addEventListener('pointerdown', e => {
   const b = e.target.closest('.k,.btn,.hi');
   if (!b) return;
@@ -425,7 +426,6 @@ document.addEventListener('pointerdown', e => {
   setTimeout(() => s.remove(), 600);
 });
 
-/* клавиатура */
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
   const m = { '*':'×', '/':'÷', '-':'−', 'Enter':'=', 'Backspace':'⌫', 'Escape':'AC' };
@@ -437,7 +437,7 @@ document.addEventListener('keydown', e => {
 });
 
 /* =========================================================
-   СИСТЕМА СОБЫТИЙ (шина)
+   ШИНА СОБЫТИЙ
    ========================================================= */
 const EVENTS = {};
 function on(event, fn, pluginId){
@@ -468,7 +468,7 @@ const ICO = {
   set: '<path fill-rule="evenodd" d="M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zM19.4 13a7.7 7.7 0 000-2l2-1.6-2-3.4-2.4 1a7 7 0 00-1.7-1L15 3.5h-4l-.4 2.5a7 7 0 00-1.7 1l-2.4-1-2 3.4 2 1.6a7.7 7.7 0 000 2l-2 1.6 2 3.4 2.4-1a7 7 0 001.7 1l.4 2.5h4l.4-2.5a7 7 0 001.7-1l2.4 1 2-3.4z"/>'
 };
 
-const PAGES = {}; /* id -> { title, icon, render, onShow, onHide, tabEl, pageEl } */
+const PAGES = {};
 
 const navEl = $('#nav');
 if (navEl) {
@@ -587,12 +587,11 @@ const UI = {
   },
 
   button(opts){
-    const b = UI.el('button', {
+    return UI.el('button', {
       class: 'btn ' + (opts.variant || ''),
       text: opts.label || '',
       onClick: opts.onClick || (() => {})
     });
-    return b;
   },
 
   toggle(opts){
@@ -692,7 +691,6 @@ const UI = {
 
   notify(opts){
     const n = UI.el('div', { class: 'notif' });
-    if (opts.icon) n.append(UI.el('span', { text: opts.icon }));
     n.append(UI.el('span', { text: opts.title || '' }));
     if (opts.body) {
       const b = UI.el('small', { text: opts.body });
@@ -730,7 +728,6 @@ function renderThemes(){
   if (!wrap) return;
   wrap.innerHTML = '';
 
-  /* системная (без плагинной) */
   const none = UI.el('button', { title: 'Без плагинной темы' });
   none.style.background = 'var(--pc)';
   none.style.color = 'var(--onpc)';
@@ -754,11 +751,9 @@ function renderThemes(){
    КОНТЕКСТНОЕ МЕНЮ РЕЗУЛЬТАТА
    ========================================================= */
 const RESULT_ACTIONS = [];
-function addResultAction(a){
-  RESULT_ACTIONS.push(a);
-}
+function addResultAction(a){ RESULT_ACTIONS.push(a); }
+
 function showResultMenu(x, y, result){
-  /* старое меню убираем */
   $$('.ctx-menu').forEach(m => m.remove());
 
   const menu = UI.el('div', { class: 'ctx-menu' });
@@ -767,19 +762,16 @@ function showResultMenu(x, y, result){
     setTimeout(() => menu.remove(), 200);
   };
 
-  /* базовые пункты */
   const base = [
-    { label: '📋 Скопировать', onClick: () => {
+    { label: 'Скопировать', onClick: () => {
       navigator.clipboard.writeText(result.replace('−','-')).then(
         () => toast('Скопировано'), () => toast('Не удалось')
       );
     } },
-    { label: '➡️ Перенести в поле', onClick: () => {
-      expr = result;
-      done = true;
-      upd();
+    { label: 'Перенести в поле', onClick: () => {
+      expr = result; done = true; upd();
     } },
-    { label: '🗑 Очистить', onClick: () => {
+    { label: 'Очистить', onClick: () => {
       expr = ''; done = false; upd();
     } }
   ];
@@ -798,10 +790,10 @@ function showResultMenu(x, y, result){
   requestAnimationFrame(() => menu.classList.add('on'));
 
   setTimeout(() => {
-    const off = (e) => {
-      if (!menu.contains(e.target)) { close(); document.removeEventListener('pointerdown', off); }
+    const off2 = (e) => {
+      if (!menu.contains(e.target)) { close(); document.removeEventListener('pointerdown', off2); }
     };
-    document.addEventListener('pointerdown', off);
+    document.addEventListener('pointerdown', off2);
   }, 50);
 }
 
@@ -817,9 +809,8 @@ function injectCSS(css){
 }
 
 /* =========================================================
-   СЕТЬ ЧЕРЕЗ ПРОКСИ
+   СЕТЬ
    ========================================================= */
-const DEFAULT_PROXY = 'https://api.allorigins.win/raw?url=';
 async function netFetch(url, opts){
   opts = opts || {};
   const finalUrl = opts.proxy ? (opts.proxy + encodeURIComponent(url)) : url;
@@ -876,7 +867,6 @@ function registerPlugin(d, builtin){
   if (wmaj > hmaj) d._compat = 'too-new';
   else if (wmaj < hmaj) d._compat = 'legacy';
 
-  /* проверка зависимостей */
   if (d.requires && d.requires.length) {
     d._missing = d.requires.filter(r => !PL[r]);
   }
@@ -895,14 +885,11 @@ const api = id => {
 
   const apiObj = {
     _id: id,
-
-    /* --- метаданные --- */
     id,
     version: API_VERSION,
     getApiVersion: () => API_VERSION,
     getCompat: () => PL[id] ? PL[id]._compat : 'unknown',
 
-    /* --- кнопки --- */
     addButton(o){
       const extra = $('#extra');
       if (!extra) return;
@@ -920,7 +907,6 @@ const api = id => {
       return b;
     },
 
-    /* --- функции и константы парсера --- */
     addFunction(n, f){
       if (!/^[a-z]+$/.test(n)) throw new Error('имя функции: только a-z');
       F[n] = f;
@@ -932,31 +918,23 @@ const api = id => {
       (PL[id]._const = PL[id]._const || []).push(n);
     },
 
-    /* --- ввод / вывод --- */
     insert: s => ins(s),
     getExpr: () => expr,
     getResult: () => { try { return ev(expr); } catch (e) { return NaN; } },
     setExpr: s => { expr = String(s); done = false; upd(); },
 
-    /* --- эффекты --- */
     vibrate: m => vib(m),
     vibratePattern: arr => vib(arr),
     beep: (f, d, t) => beep(f, d, t),
     toast,
 
-    /* --- страницы --- */
-    addPage(o){
-      o._pluginId = id;
-      return addPage(o);
-    },
+    addPage(o){ o._pluginId = id; return addPage(o); },
     removePage: pid => removePage(pid),
     openPage: pid => go(pid),
     getCurrentPage: () => currentPage,
 
-    /* --- хранилище --- */
     store,
 
-    /* --- настройки --- */
     getSetting(k){ return getVals(id)[k]; },
     getAllSettings(){ return Object.assign({}, getVals(id)); },
     setSetting(k, v){
@@ -972,7 +950,6 @@ const api = id => {
       PSUBS[id].push(fn);
     },
 
-    /* --- события --- */
     on(event, fn){
       const unsub = on(event, fn, id);
       listeners.push(unsub);
@@ -981,44 +958,34 @@ const api = id => {
     off(event, fn){ off(event, fn); },
     emit(event, data){ emit(event, data); },
 
-    /* --- UI --- */
     ui: UI,
 
-    /* --- CSS --- */
     injectCSS(css){
       const unsub = injectCSS(css);
       cssList.push(unsub);
       return unsub;
     },
 
-    /* --- темы --- */
     registerTheme(t){ registerTheme(t); },
     setTheme(tid){ setTheme(tid); },
-
-    /* --- меню результата --- */
     addResultAction(a){ addResultAction(a); },
 
-    /* --- сеть --- */
     fetch: netFetch,
     fetchJSON: netFetchJSON,
     fetchText: netFetchText,
 
-    /* --- уведомления --- */
     notify(opts){ UI.notify(opts); },
 
-    /* --- логирование --- */
     log: (...args) => console.log('[' + id + ']', ...args),
     warn: (...args) => console.warn('[' + id + ']', ...args),
     error: (...args) => console.error('[' + id + ']', ...args),
 
-    /* --- локализация --- */
     i18n(map){
       const lang = (navigator.language || 'en').slice(0, 2);
       const dict = map[lang] || map.en || map.ru || {};
       return k => dict[k] !== undefined ? dict[k] : (map.en && map.en[k]) || k;
     },
 
-    /* --- внутренние хуки для очистки --- */
     _cleanup(){
       cssList.forEach(fn => { try { fn(); } catch (e) {} });
       listeners.forEach(fn => { try { fn(); } catch (e) {} });
@@ -1045,7 +1012,6 @@ function applyDefaults(id){
 function load(id){
   const p = PL[id];
   if (!p) return;
-
   if (p._compat === 'too-new') {
     toast('Плагин «' + (p.name || id) + '» требует ядро ' + (p.apiVersion || '?'));
     return;
@@ -1056,7 +1022,6 @@ function load(id){
   }
   applyDefaults(id);
   if (p._on) return;
-
   try {
     if (p.onLoad) p.onLoad(api(id));
     p._on = 1;
@@ -1070,7 +1035,6 @@ function unload(id){
   if (!p) return;
   try { if (p.onUnload) p.onUnload(api(id)); } catch (e) {}
 
-  /* чистим всё, что плагин навешал */
   const a = api(id);
   if (a._cleanup) { try { a._cleanup(); } catch (e) {} }
 
@@ -1097,13 +1061,13 @@ function runCode(src){
 registerPlugin({
   id: 'sci',
   name: 'Научный режим',
-  description: 'sin, cos, tan (в градусах), ln, log, √, π и степень',
+  description: 'sin, cos, tan (в градусах), ln, log, корень, π и степень',
   version: '2.0',
   apiVersion: '3.0',
   author: 'Calc',
-  icon: '🧮',
+  icon: 'S',
   onLoad(a){
-    [['sin','sin('],['cos','cos('],['tan','tan('],['ln','ln('],['log','log('],['√','√('],['π','π'],['e','e'],['xʸ','^']]
+    [['sin','sin('],['cos','cos('],['tan','tan('],['ln','ln('],['log','log('],['√','√('],['π','π'],['e','e'],['x^y','^']]
       .forEach(([l, i]) => a.addButton({ label: l, insert: i }));
   }
 }, 1);
@@ -1111,14 +1075,14 @@ registerPlugin({
 registerPlugin({
   id: 'vat',
   name: 'НДС',
-  description: 'Кнопки «+НДС» и «−НДС» с настраиваемой ставкой',
+  description: 'Кнопки «+НДС» и «-НДС» с настраиваемой ставкой',
   version: '2.0',
   apiVersion: '3.0',
   author: 'Calc',
-  icon: '💰',
+  icon: 'Н',
   settings: {
-    rate: { type: 'number', label: 'Ставка, %', default: 20, min: 0, max: 100, step: 0.5, hint: 'Например, 20' },
-    labelMode: { type: 'seg', label: 'Подписи кнопок', default: 'short',
+    rate: { type: 'number', label: 'Ставка, %', default: 20, min: 0, max: 100, step: 0.5 },
+    labelMode: { type: 'seg', label: 'Подписи', default: 'short',
       options: [{ value: 'short', label: '+НДС' }, { value: 'full', label: 'С налогом' }] }
   },
   onLoad(a){
@@ -1133,7 +1097,7 @@ registerPlugin({
         x.setExpr(fmt(v * mul));
       };
       a.addButton({ label: short ? '+НДС' : 'С налогом', onClick: f(k) });
-      a.addButton({ label: short ? '−НДС' : 'Без налога', onClick: f(1 / k) });
+      a.addButton({ label: short ? '-НДС' : 'Без налога', onClick: f(1 / k) });
     };
     render();
     a.onSettingsChange(render);
@@ -1143,11 +1107,11 @@ registerPlugin({
 registerPlugin({
   id: 'rnd',
   name: 'Случайное число',
-  description: 'Вставляет случайное число с вибро-откликом',
+  description: 'Вставляет случайное число',
   version: '2.0',
   apiVersion: '3.0',
   author: 'Calc',
-  icon: '🎲',
+  icon: 'R',
   settings: {
     min: { type: 'number', label: 'Минимум', default: 1, min: 0, max: 9999, step: 1 },
     max: { type: 'number', label: 'Максимум', default: 100, min: 1, max: 9999, step: 1 },
@@ -1155,7 +1119,7 @@ registerPlugin({
   },
   onLoad(a){
     a.addButton({
-      label: '🎲 rnd',
+      label: 'random',
       onClick: x => {
         let lo = +x.getSetting('min') || 1, hi = +x.getSetting('max') || 100;
         if (hi < lo) { const t = lo; lo = hi; hi = t; }
@@ -1174,17 +1138,17 @@ registerPlugin({
   version: '2.0',
   apiVersion: '3.0',
   author: 'Calc',
-  icon: '📳',
+  icon: 'V',
   onLoad(a){
     a.addButton({
-      label: '📳 Тест',
+      label: 'Тест',
       onClick: x => {
         const ok = x.vibrate([40, 60, 40, 60, 80]);
         x.toast(ok ? 'Вибро отправлено' : 'Вибро выключено или недоступно');
       }
     });
     a.addButton({
-      label: '🔍 Диагноз',
+      label: 'Диагноз',
       onClick: x => {
         const nat = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.NativeTools;
         const fr = window.self !== window.top;
@@ -1198,7 +1162,6 @@ registerPlugin({
   }
 }, 1);
 
-/* демо-плагин, показывающий новые возможности API 3.0 */
 registerPlugin({
   id: 'demo',
   name: 'Демо API 3.0',
@@ -1206,9 +1169,8 @@ registerPlugin({
   version: '1.0',
   apiVersion: '3.0',
   author: 'Calc',
-  icon: '✨',
+  icon: 'D',
   onLoad(a){
-    /* вкладка */
     a.addPage({
       id: 'demo-page',
       title: 'Демо',
@@ -1219,7 +1181,7 @@ registerPlugin({
 
         root.append(UI.card({
           title: 'Счётчик в store',
-          hint: 'Значение хранится в изолированном хранилище плагина',
+          hint: 'Значение хранится в изолированном хранилище',
           content: (() => {
             const wrap = UI.el('div');
             const out = UI.el('b', { text: String(a.store.get('count', 0)) });
@@ -1282,52 +1244,15 @@ registerPlugin({
             return wrap;
           })()
         }));
-
-        root.append(UI.card({
-          title: 'Хуки событий',
-          hint: 'Плагин реагирует на нажатия клавиш',
-          content: UI.el('div', { text: 'Попробуй переключиться на «Счёт» и нажать что-нибудь.' })
-        }));
-
-        root.append(UI.card({
-          title: 'CSS от плагина',
-          hint: 'Кнопка ниже переключает свою собственную тему',
-          content: (() => {
-            const b = UI.button({
-              label: 'Включить/выключить неон',
-              onClick: () => {
-                if (a.store.get('neon')) {
-                  a.store.set('neon', false);
-                  a.setTheme(null);
-                } else {
-                  a.store.set('neon', true);
-                  a.registerTheme({
-                    id: 'demo-neon',
-                    name: 'Неон',
-                    light: { '--pr': '#06f', '--pc': '#cdf', '--onpc': '#013' },
-                    dark: { '--pr': '#0ff', '--pc': '#036', '--onpc': '#cff' }
-                  });
-                  a.setTheme('demo-neon');
-                }
-              }
-            });
-            return b;
-          })()
-        }));
       }
     });
 
-    /* хук на нажатия */
     a.on('calc:press', e => {
-      if (e.key === '=') {
-        // просто логируем
-        a.log('нажато =', e.expr);
-      }
+      if (e.key === '=') a.log('нажато =', e.expr);
     });
 
-    /* хук на результат — добавляем пункт в контекстное меню */
     a.addResultAction({
-      label: '🔥 Удвоить',
+      label: 'Удвоить',
       onClick: result => {
         try {
           const n = parseFloat(result.replace('−','-'));
@@ -1348,6 +1273,47 @@ for (const id in custom) {
 }
 enabled = enabled.filter(id => PL[id]);
 enabled.forEach(load);
+
+/* =========================================================
+   БЛОК АВТОРА: Связаться + Поддержать
+   ========================================================= */
+function bindAuthorBlock(){
+  const contactRow = $('#contact-row');
+  if (contactRow && !contactRow._bound) {
+    contactRow._bound = true;
+    contactRow.onclick = () => {
+      vib(15);
+      try {
+        const C = window.Capacitor;
+        if (C && C.Plugins && C.Plugins.App && C.Plugins.App.openUrl) {
+          C.Plugins.App.openUrl({ url: CONTACT_URL }).catch(() => {
+            window.open(CONTACT_URL, '_blank');
+          });
+        } else {
+          window.open(CONTACT_URL, '_blank');
+        }
+      } catch (e) {
+        window.open(CONTACT_URL, '_blank');
+      }
+    };
+  }
+
+  const donateRow = $('#donate-row');
+  if (donateRow && !donateRow._bound) {
+    donateRow._bound = true;
+    donateRow.onclick = () => {
+      vib([10, 30, 10]);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(DONATE_CARD).then(
+          () => toast('Номер карты скопирован: ' + DONATE_CARD),
+          () => toast('Номер: ' + DONATE_CARD)
+        );
+      } else {
+        toast('Номер: ' + DONATE_CARD);
+      }
+    };
+  }
+}
 
 /* =========================================================
    СПИСОК ПЛАГИНОВ
@@ -1378,11 +1344,10 @@ function rPlug(){
     const bEl = c.querySelector('b');
     bEl.textContent = p.name || p.id;
 
-    /* бейджи */
     if (p._compat === 'too-new') {
       const b = document.createElement('span');
       b.className = 'badge warn';
-      b.textContent = '⚠ требует ядро ' + (p.apiVersion || '?');
+      b.textContent = 'требует ядро ' + (p.apiVersion || '?');
       bEl.append(b);
     } else if (p._compat === 'legacy') {
       const b = document.createElement('span');
@@ -1404,7 +1369,6 @@ function rPlug(){
     inp.checked = enabled.indexOf(p.id) >= 0;
     if (p._compat === 'too-new' || (p._missing && p._missing.length)) {
       inp.disabled = true;
-      inp.title = p._compat === 'too-new' ? 'Обновите приложение' : 'Не хватает: ' + p._missing.join(', ');
     } else {
       inp.onchange = () => {
         vib();
@@ -1447,10 +1411,13 @@ function rPlug(){
 
     l.append(c);
   });
+
+  /* После списка — привязываем обработчики к блоку автора */
+  bindAuthorBlock();
 }
 
 /* =========================================================
-   ПОСТРОЕНИЕ UI НАСТРОЕК
+   ПОСТРОЕНИЕ UI НАСТРОЕК ПЛАГИНА
    ========================================================= */
 function buildSettings(pid, defs, root){
   const vals = getVals(pid);
@@ -1561,14 +1528,12 @@ const TPL = [
 "  version: '1.0',",
 "  apiVersion: '3.0',",
 "  author: 'me',",
-"  icon: '✨',",
-"  permissions: ['storage'],",
+"  icon: 'M',",
 '  settings: {',
 "    step: { type: 'number', label: 'Шаг', default: 1, min: 1, max: 100 },",
 "    vib:  { type: 'bool',   label: 'Вибро', default: true }",
 '  },',
 '  onLoad(api) {',
-'    // кнопка на главном экране',
 '    api.addButton({',
 "      label: 'Привет',",
 '      onClick: a => {',
@@ -1576,20 +1541,6 @@ const TPL = [
 "        a.vibrate(20);",
 '      }',
 '    });',
-'',
-'    // своя вкладка',
-'    api.addPage({',
-"      id: 'my-page',",
-"      title: 'Моя',",
-'      render: root => {',
-"        root.innerHTML = '';",
-"        root.append(api.ui.el('h1', { text: 'Моя страница' }));",
-'      }',
-'    });',
-'',
-'    // хранилище',
-"    api.store.set('hello', 'world');",
-"    api.log('store:', api.store.get('hello'));",
 '  },',
 '  onUnload() {}',
 '});'
@@ -1710,9 +1661,7 @@ an();
 const avEl = $('#api-ver');
 if (avEl) avEl.textContent = 'API ' + API_VERSION;
 
-/* рендерим темы, если есть */
 renderThemes();
-
 applyTheme();
 upd();
 
@@ -1735,7 +1684,6 @@ upd();
   N.getPending().then(r => { if (r && r.text) openCalcText(r.text, r.name); }).catch(() => {});
 })();
 
-/* сетевые события */
 window.addEventListener('online', () => emit('network', { online: true }));
 window.addEventListener('offline', () => emit('network', { online: false }));
 
