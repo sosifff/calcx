@@ -316,22 +316,63 @@ jobs:
           }
           EOF
 
-          # Тема edge-to-edge — наследуемся от гарантированно существующей AppCompat
-          mkdir -p android/app/src/main/res/values
-          cat > android/app/src/main/res/values/styles.xml <<'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
+      # ──────── Edge-to-edge: дописываем в существующий styles.xml ────────
+      - name: Patch styles.xml (edge-to-edge)
+        run: |
+          python3 - <<'PY'
+          import os, re
+
+          styles = 'android/app/src/main/res/values/styles.xml'
+
+          if not os.path.exists(styles):
+              os.makedirs(os.path.dirname(styles), exist_ok=True)
+              content = '''<?xml version="1.0" encoding="utf-8"?>
           <resources>
-              <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
-                  <item name="windowActionBar">false</item>
-                  <item name="windowNoTitle">true</item>
+              <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
                   <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
                   <item name="android:statusBarColor">@android:color/transparent</item>
                   <item name="android:navigationBarColor">@android:color/transparent</item>
-                  <item name="android:windowLightStatusBar">false</item>
-                  <item name="android:windowLightNavigationBar">false</item>
+              </style>
+              <style name="AppTheme.NoActionBar" parent="AppTheme">
+                  <item name="windowActionBar">false</item>
+                  <item name="windowNoTitle">true</item>
+              </style>
+              <style name="AppTheme.NoActionBarLaunch" parent="AppTheme.NoActionBar">
+                  <item name="android:background">@drawable/splash</item>
               </style>
           </resources>
-          EOF
+          '''
+              open(styles, 'w', encoding='utf-8').write(content)
+              print('styles.xml создан с нуля (файла не было)')
+          else:
+              s = open(styles, encoding='utf-8').read()
+
+              additions = (
+                  '        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>\n'
+                  '        <item name="android:statusBarColor">@android:color/transparent</item>\n'
+                  '        <item name="android:navigationBarColor">@android:color/transparent</item>\n'
+              )
+
+              # Ищем AppTheme и добавляем в него edge-to-edge
+              pattern = r'(<style name="AppTheme"[^>]*>)(.*?)(</style>)'
+
+              def repl(m):
+                  head, body, tail = m.groups()
+                  if 'windowLayoutInDisplayCutoutMode' in body:
+                      return m.group(0)
+                  return head + '\n' + body.rstrip() + '\n' + additions + tail
+
+              s2, n = re.subn(pattern, repl, s, count=1, flags=re.DOTALL)
+
+              if n == 0:
+                  # AppTheme не нашли — создадим вручную перед </resources>
+                  s2 = s.replace('</resources>',
+                      '    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">\n'
+                      + additions + '    </style>\n</resources>')
+
+              open(styles, 'w', encoding='utf-8').write(s2)
+              print(f'styles.xml обновлён (замен: {n})')
+          PY
 
       # ──────── Патч AndroidManifest ────────
       - name: Patch AndroidManifest
@@ -373,9 +414,6 @@ jobs:
           if 'android.intent.action.VIEW' not in s:
               assert '</activity>' in s
               s = s.replace('</activity>', filters + '</activity>', 1)
-
-          s = s.replace('android:theme="@style/AppTheme"',
-                        'android:theme="@style/AppTheme.NoActionBar"')
 
           if 'android:configChanges' not in s:
               s = s.replace(
