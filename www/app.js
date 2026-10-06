@@ -1,6 +1,5 @@
 /* =========================================================
    CalcX v3 — ядро с системой плагинов API 3.0
-   Material 3 Expressive · без эмодзи · с блоком автора
    ========================================================= */
 (function(){
 'use strict';
@@ -10,7 +9,6 @@
    ========================================================= */
 const API_VERSION = '3.0';
 
-/* Контакт автора и реквизиты поддержки */
 const CONTACT_URL   = 'https://t.me/xcnak';
 const CONTACT_LABEL = '@xcnak';
 const DONATE_CARD   = '2202206254152148';
@@ -508,6 +506,60 @@ function go(id){
   emit('page:open', { id });
 }
 
+/* =========================================================
+   ИСТОРИЯ
+   ========================================================= */
+function rHist(){
+  const h = $('#hist');
+  if (!h) return;
+  h.innerHTML = '';
+
+  if (!hist.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'Пока пусто';
+    h.append(empty);
+    return;
+  }
+
+  hist.forEach((x, i) => {
+    const card = document.createElement('div');
+    card.className = 'card hi';
+    card.style.animationDelay = i * 30 + 'ms';
+
+    const q = document.createElement('small');
+    q.textContent = x.e + ' =';
+
+    const a = document.createElement('b');
+    a.textContent = x.r;
+
+    card.append(q, a);
+    card.onclick = () => {
+      expr = x.r;
+      done = true;
+      upd();
+      go('calc');
+    };
+    h.append(card);
+  });
+
+  const clear = document.createElement('button');
+  clear.className = 'btn tonal';
+  clear.style.cssText = 'width:100%;margin-top:12px';
+  clear.textContent = 'Очистить историю';
+  clear.onclick = () => {
+    if (!confirm('Очистить всю историю?')) return;
+    hist.length = 0;
+    LS.set('h', hist);
+    rHist();
+    vib();
+  };
+  h.append(clear);
+}
+
+/* =========================================================
+   СТРАНИЦЫ ПЛАГИНОВ
+   ========================================================= */
 function addPage(opts){
   if (!opts || !opts.id) throw new Error('нужен id страницы');
   if (PAGES[opts.id]) throw new Error('страница уже существует: ' + opts.id);
@@ -515,7 +567,8 @@ function addPage(opts){
   const pg = document.createElement('section');
   pg.className = 'page';
   pg.id = 'p-' + opts.id;
-  $('#main') || $('main').append(pg);
+  const main = $('main');
+  if (main) main.append(pg);
 
   const tab = document.createElement('button');
   tab.className = 'tab';
@@ -523,7 +576,8 @@ function addPage(opts){
   const icon = opts.icon || '<path d="M4 4h16v16H4z"/>';
   tab.innerHTML = '<i><svg viewBox="0 0 24 24">' + icon + '</svg></i>' + (opts.title || opts.id);
   tab.onclick = () => go(opts.id);
-  $('#nav').append(tab);
+  const nav = $('#nav');
+  if (nav) nav.append(tab);
 
   PAGES[opts.id] = {
     title: opts.title, icon: opts.icon,
@@ -686,7 +740,8 @@ const UI = {
       setTimeout(() => back.remove(), 300);
     }
     back.onclick = e => { if (e.target === back) close(); };
-    $('#plugin-modals').append(back);
+    const host = $('#plugin-modals');
+    if (host) host.append(back);
     requestAnimationFrame(() => back.classList.add('on'));
     return { close, el: m };
   },
@@ -695,7 +750,8 @@ const UI = {
     const ov = UI.el('div', { class: 'overlay-load' });
     ov.append(UI.el('div', { class: 'spinner' }));
     if (text) ov.append(UI.el('div', { text: text }));
-    $('#plugin-overlays').append(ov);
+    const host = $('#plugin-overlays');
+    if (host) host.append(ov);
     return () => ov.remove();
   },
 
@@ -707,7 +763,8 @@ const UI = {
       b.style.marginLeft = '6px';
       n.append(b);
     }
-    $('#plugin-notifications').append(n);
+    const host = $('#plugin-notifications');
+    if (host) host.append(n);
     requestAnimationFrame(() => n.classList.add('on'));
     const ttl = opts.duration || 3000;
     setTimeout(() => {
@@ -1066,7 +1123,7 @@ function runCode(src){
 }
 
 /* =========================================================
-   ВСТРОЕННЫЕ ПЛАГИНЫ — без эмодзи, с буквенными иконками
+   ВСТРОЕННЫЕ ПЛАГИНЫ — без эмодзи
    ========================================================= */
 registerPlugin({
   id: 'sci',
@@ -1293,7 +1350,7 @@ enabled = enabled.filter(id => PL[id]);
 enabled.forEach(load);
 
 /* =========================================================
-   БЛОК АВТОРА: Связаться + Поддержать
+   БЛОК АВТОРА
    ========================================================= */
 function bindAuthorBlock(){
   const contactRow = $('#contact-row');
@@ -1431,12 +1488,11 @@ function rPlug(){
     l.append(c);
   });
 
-  /* Привязываем блок автора */
   bindAuthorBlock();
 }
 
 /* =========================================================
-   ПОСТРОЕНИЕ UI НАСТРОЕК ПЛАГИНА
+   НАСТРОЙКИ ПЛАГИНА
    ========================================================= */
 function buildSettings(pid, defs, root){
   const vals = getVals(pid);
@@ -1553,7 +1609,6 @@ const TPL = [
 "    vib:  { type: 'bool',   label: 'Вибро', default: true }",
 '  },',
 '  onLoad(api) {',
-'    // кнопка над клавиатурой',
 '    api.addButton({',
 "      label: 'Привет',",
 '      onClick: a => {',
@@ -1562,7 +1617,6 @@ const TPL = [
 '      }',
 '    });',
 '',
-'    // своя вкладка',
 '    api.addPage({',
 "      id: 'my-page',",
 "      title: 'Моя',",
