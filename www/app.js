@@ -1,5 +1,6 @@
 /* =========================================================
    CalcX v3 — ядро с системой плагинов API 3.0
+   Тема плагина теперь перебивает системную палитру
    ========================================================= */
 (function(){
 'use strict';
@@ -89,7 +90,7 @@ window.addEventListener('unhandledrejection', e => {
 });
 
 /* =========================================================
-   ТЕМА — Material You
+   ТЕМА — Material You + плагины
    ========================================================= */
 function sysHue(){
   try {
@@ -132,6 +133,11 @@ function palMap(d){
   };
 }
 
+/* Приводит ключ темы к виду без дефисов: '--bg' → 'bg', 'bg' → 'bg' */
+function normalizeKey(k){
+  return String(k).replace(/^-+/, '');
+}
+
 function applyTheme(){
   try {
     const mq = matchMedia('(prefers-color-scheme: dark)').matches;
@@ -140,6 +146,7 @@ function applyTheme(){
     const H = (a, s, l) => 'hsl(' + (a % 360) + ' ' + s + '% ' + l + '%)';
     const t = h + 60;
 
+    /* 1. Базовая палитра */
     let p;
     if (S.hue === 'sys' && PAL && PAL.a1_600) {
       p = palMap(dark);
@@ -163,17 +170,27 @@ function applyTheme(){
       };
     }
 
+    /* 2. Накладываем тему плагина — перебивая всё */
+    if (S.pluginTheme && THEMES[S.pluginTheme]) {
+      const theme = THEMES[S.pluginTheme];
+      const vars = dark ? theme.dark : theme.light;
+      if (vars) {
+        for (const k in vars) {
+          const clean = normalizeKey(k);
+          if (clean) p[clean] = vars[k];
+        }
+      }
+    }
+
+    /* 3. Применяем CSS-переменные */
     const r = document.documentElement.style;
-    for (const k in p) r.setProperty('--' + k.replace(/_/g, '-'), p[k]);
+    for (const k in p) {
+      r.setProperty('--' + k.replace(/_/g, '-'), p[k]);
+    }
     r.colorScheme = dark ? 'dark' : 'light';
+
     const mt = document.querySelector('meta[name=theme-color]');
     if (mt) mt.content = p.bg;
-
-    if (S.pluginTheme && THEMES[S.pluginTheme]) {
-      const t2 = THEMES[S.pluginTheme];
-      const vars = dark ? t2.dark : t2.light;
-      if (vars) for (const k in vars) r.setProperty('--' + k, vars[k]);
-    }
 
     emit('theme:change', { dark });
   } catch (e) { console.error('applyTheme', e); }
@@ -349,7 +366,6 @@ function press(v){
   upd();
 }
 
-/* кнопки калькулятора */
 const KEYS = [
   ['AC','AC','fn'], ['()','( )','fn'], ['%','%','fn'], ['÷','÷','op'],
   ['7'], ['8'], ['9'], ['×','×','op'],
@@ -416,7 +432,6 @@ if (dispEl) {
   });
 }
 
-/* ripple-эффект */
 document.addEventListener('pointerdown', e => {
   const b = e.target.closest('.k,.btn,.hi');
   if (!b) return;
@@ -433,7 +448,6 @@ document.addEventListener('pointerdown', e => {
   setTimeout(() => s.remove(), 600);
 });
 
-/* клавиатура ПК */
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
   const m = { '*':'×', '/':'÷', '-':'−', 'Enter':'=', 'Backspace':'⌫', 'Escape':'AC' };
@@ -783,6 +797,8 @@ function registerTheme(t){
   THEMES[t.id] = t;
   LS.set('plugin_themes', THEMES);
   renderThemes();
+  /* Если эта тема уже выбрана — переприменяем */
+  if (S.pluginTheme === t.id) applyTheme();
 }
 function setTheme(id){
   S.pluginTheme = id;
@@ -795,6 +811,7 @@ function renderThemes(){
   if (!wrap) return;
   wrap.innerHTML = '';
 
+  /* Кнопка «без темы» */
   const none = UI.el('button', { title: 'Без плагинной темы' });
   none.style.background = 'var(--pc)';
   none.style.color = 'var(--onpc)';
@@ -806,10 +823,14 @@ function renderThemes(){
   Object.keys(THEMES).forEach(id => {
     const t = THEMES[id];
     const b = UI.el('button', { title: t.name || id });
-    const color = (t.light && t.light['--pr']) || (t.dark && t.dark['--pr']) || '#888';
+    /* Поддерживаем и '--pr', и 'pr' */
+    const color =
+      (t.light && (t.light['--pr'] || t.light.pr)) ||
+      (t.dark && (t.dark['--pr'] || t.dark.pr)) ||
+      '#888';
     b.style.background = color;
     if (S.pluginTheme === id) b.classList.add('on');
-    b.onclick = () => setTheme(id);
+    b.onclick = () => { setTheme(id); vib(); };
     wrap.append(b);
   });
 }
@@ -1035,6 +1056,8 @@ const api = id => {
 
     registerTheme(t){ registerTheme(t); },
     setTheme(tid){ setTheme(tid); },
+    getCurrentTheme: () => S.pluginTheme,
+    listThemes: () => Object.keys(THEMES),
     addResultAction(a){ addResultAction(a); },
 
     fetch: netFetch,
@@ -1116,6 +1139,11 @@ function unload(id){
   p._const = 0;
   p._on = 0;
   PSUBS[id] = [];
+
+  /* Если этот плагин владел активной темой — сбрасываем */
+  if (p.themes && p.themes.indexOf(S.pluginTheme) >= 0) {
+    setTheme(null);
+  }
 }
 
 function runCode(src){
@@ -1123,7 +1151,7 @@ function runCode(src){
 }
 
 /* =========================================================
-   ВСТРОЕННЫЕ ПЛАГИНЫ — без эмодзи
+   ВСТРОЕННЫЕ ПЛАГИНЫ
    ========================================================= */
 registerPlugin({
   id: 'sci',
@@ -1149,8 +1177,7 @@ registerPlugin({
   author: 'CalcX',
   icon: 'Н',
   settings: {
-    rate: { type: 'number', label: 'Ставка, %', default: 20, min: 0, max: 100, step: 0.5,
-      hint: 'Например, 20 для России' },
+    rate: { type: 'number', label: 'Ставка, %', default: 20, min: 0, max: 100, step: 0.5 },
     labelMode: { type: 'seg', label: 'Подписи кнопок', default: 'short',
       options: [{ value: 'short', label: '+НДС' }, { value: 'full', label: 'С налогом' }] }
   },
@@ -1216,127 +1243,7 @@ registerPlugin({
         x.toast(ok ? 'Вибро отправлено' : 'Вибро выключено или недоступно');
       }
     });
-    a.addButton({
-      label: 'Диагноз',
-      onClick: x => {
-        const nat = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.NativeTools;
-        const fr = window.self !== window.top;
-        let msg;
-        if (nat) msg = 'Нативное вибро доступно';
-        else msg = 'navigator.vibrate: ' + (navigator.vibrate ? 'есть' : 'нет');
-        if (fr && !nat) msg += ' · страница во фрейме';
-        x.toast(msg);
-      }
-    });
   }
-}, 1);
-
-registerPlugin({
-  id: 'demo',
-  name: 'Демо API 3.0',
-  description: 'Показывает вкладки, store, ui, хуки, темы',
-  version: '1.0',
-  apiVersion: '3.0',
-  author: 'CalcX',
-  icon: 'D',
-  onLoad(a){
-    a.addPage({
-      id: 'demo-page',
-      title: 'Демо',
-      icon: '<path d="M12 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/>',
-      render: root => {
-        root.innerHTML = '';
-        root.append(UI.el('h1', { text: 'Демо API 3.0' }));
-
-        root.append(UI.card({
-          title: 'Счётчик в store',
-          hint: 'Значение хранится в изолированном хранилище',
-          content: (() => {
-            const wrap = UI.el('div');
-            const out = UI.el('b', { text: String(a.store.get('count', 0)) });
-            out.style.fontSize = '28px';
-            out.style.display = 'block';
-            out.style.margin = '12px 0';
-            out.style.color = 'var(--pr)';
-            wrap.append(out);
-            const inc = UI.button({
-              label: '+1',
-              onClick: () => {
-                const v = a.store.get('count', 0) + 1;
-                a.store.set('count', v);
-                out.textContent = String(v);
-                a.vibrate(15);
-              }
-            });
-            const rst = UI.button({
-              label: 'Сброс',
-              variant: 'tonal',
-              onClick: () => { a.store.set('count', 0); out.textContent = '0'; }
-            });
-            const row = UI.el('div', { class: 'row' });
-            row.style.gap = '8px';
-            row.append(inc, rst);
-            wrap.append(row);
-            return wrap;
-          })()
-        }));
-
-        root.append(UI.card({
-          title: 'UI-компоненты',
-          content: (() => {
-            const wrap = UI.el('div');
-            wrap.append(UI.toggle({
-              label: 'Переключатель',
-              value: true,
-              onChange: v => a.toast('Значение: ' + v)
-            }));
-            const sel = UI.select({
-              options: [
-                { value: 'a', label: 'А' },
-                { value: 'b', label: 'Б' },
-                { value: 'c', label: 'В' }
-              ],
-              value: 'a',
-              onChange: v => a.toast('Выбрано: ' + v)
-            });
-            sel.style.marginTop = '12px';
-            wrap.append(sel);
-            const b = UI.button({
-              label: 'Открыть модалку',
-              onClick: () => {
-                UI.modal({
-                  title: 'Привет',
-                  content: UI.el('div', { text: 'Это модальное окно из плагина.' }),
-                  actions: [
-                    { label: 'Отмена', variant: 'tonal' },
-                    { label: 'OK', variant: 'filled', onClick: () => a.toast('OK!') }
-                  ]
-                });
-              }
-            });
-            b.style.marginTop = '12px';
-            wrap.append(b);
-            return wrap;
-          })()
-        }));
-      }
-    });
-
-    a.on('calc:press', e => {
-      if (e.key === '=') a.log('нажато =', e.expr);
-    });
-
-    a.addResultAction({
-      label: 'Удвоить',
-      onClick: result => {
-        try {
-          const n = parseFloat(result.replace('−','-'));
-          if (!isNaN(n)) a.setExpr(String(n * 2));
-        } catch (e) {}
-      }
-    });
-  },
-  onUnload(){}
 }, 1);
 
 /* ---------- загрузка кастомных ---------- */
@@ -1429,12 +1336,6 @@ function rPlug(){
       const b = document.createElement('span');
       b.className = 'badge legacy';
       b.textContent = 'legacy';
-      bEl.append(b);
-    }
-    if (p.permissions && p.permissions.length) {
-      const b = document.createElement('span');
-      b.className = 'badge perm';
-      b.textContent = p.permissions.join(',');
       bEl.append(b);
     }
 
@@ -1604,25 +1505,12 @@ const TPL = [
 "  apiVersion: '3.0',",
 "  author: 'me',",
 "  icon: 'M',",
-'  settings: {',
-"    step: { type: 'number', label: 'Шаг', default: 1, min: 1, max: 100 },",
-"    vib:  { type: 'bool',   label: 'Вибро', default: true }",
-'  },',
 '  onLoad(api) {',
 '    api.addButton({',
 "      label: 'Привет',",
 '      onClick: a => {',
 "        a.toast('Привет из плагина!');",
 "        a.vibrate(20);",
-'      }',
-'    });',
-'',
-'    api.addPage({',
-"      id: 'my-page',",
-"      title: 'Моя',",
-'      render: root => {',
-"        root.innerHTML = '';",
-"        root.append(api.ui.el('h1', { text: 'Моя страница' }));",
 '      }',
 '    });',
 '  },',
