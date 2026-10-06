@@ -1,26 +1,48 @@
 <!DOCTYPE html>
 <html lang="ru"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#101410">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0a0e12">
 <meta name="color-scheme" content="light dark">
-<title>Калькулятор</title>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>CalcX</title>
 <link rel="stylesheet" href="style.css"></head><body>
 <div id="app">
 <main>
- <section class="page on" id="p-calc"><div id="calc" style="height:100%">
-  <div id="disp"><div id="ex">0</div><div id="rs"></div></div>
-  <div id="extra"></div><div id="keys"></div></div></section>
- <section class="page" id="p-hist"><h1>История</h1><div id="hist"></div></section>
- <section class="page" id="p-plug">
-  <h1>Плагины</h1>
-  <div id="plist"></div>
-  <div class="row" style="margin:4px 0 16px">
-   <button class="btn grow" id="add">Вставить код</button>
-   <label class="btn t grow" id="open" for="file">Открыть .calc</label>
+ <section class="page on" id="p-calc"><div id="calc">
+  <div id="disp">
+   <div id="ex">0</div>
+   <div id="rs"></div>
   </div>
-  <input type="file" id="file" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none">
+  <div id="extra"></div>
+  <div id="keys"></div>
+ </div></section>
 
-  <!-- НИЖНИЙ БЛОК: СВЯЗАТЬСЯ И ПОДДЕРЖАТЬ -->
+ <section class="page" id="p-hist">
+  <header class="page-head">
+   <h1>История</h1>
+  </header>
+  <div id="hist"></div>
+ </section>
+
+ <section class="page" id="p-plug">
+  <header class="page-head">
+   <h1>Плагины</h1>
+  </header>
+  <div id="plist"></div>
+  <div class="btn-row">
+   <button class="btn filled grow" id="add">
+    <svg viewBox="0 0 24 24" class="ic"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+    Вставить код
+   </button>
+   <label class="btn tonal grow" for="file">
+    <svg viewBox="0 0 24 24" class="ic"><path d="M20 6h-8l-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2z"/></svg>
+    Открыть .calc
+   </label>
+  </div>
+  <input type="file" id="file" hidden>
+
   <div class="author-card">
    <div class="author-row" id="contact-row">
     <div class="author-icon">
@@ -30,28 +52,93 @@
      <b>Связаться</b>
      <small>@xcnak</small>
     </div>
+    <svg viewBox="0 0 24 24" class="chev"><path d="M9 6l6 6-6 6"/></svg>
    </div>
    <div class="author-row" id="donate-row">
-    <div class="author-icon">
-     <svg viewBox="0 0 24 24" class="hand-icon"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm-1-13h2v3h3v2h-3v3h-2v-3H8v-2h3V7z"/></svg>
+    <div class="author-icon accent">
+     <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
     </div>
     <div class="author-grow">
      <b>Поддержать</b>
      <small>2202 2062 5415 2148</small>
     </div>
+    <svg viewBox="0 0 24 24" class="chev"><path d="M9 6l6 6-6 6"/></svg>
    </div>
   </div>
  </section>
- <section class="page" id="p-set"><h1>Настройки</h1>
-  <div class="card"><b>Тема</b><div class="seg" id="mode"><button data-v="auto">Системная</button><button data-v="light">Светлая</button><button data-v="dark">Тёмная</button></div></div>
-  <div class="card"><b>Цвет</b><small>Системный акцент или свой оттенок</small><div class="sws" id="sws"></div></div>
-  <div class="card"><b>Тема плагина</b><small>Свои темы, установленные плагинами</small><div id="plugin-themes" class="sws"></div></div>
-  <div class="card"><div class="row"><div class="grow"><b>Вибро-отклик</b><small>Работает на Android</small></div><label class="sw"><input type="checkbox" id="vib"><i></i></label></div>
-   <div class="seg" id="pow"><button data-v="0">Слабая</button><button data-v="1">Средняя</button><button data-v="2">Сильная</button></div></div>
-  <div class="card"><div class="row"><div class="grow"><b>Анимации</b></div><label class="sw"><input type="checkbox" id="anim"><i></i></label></div></div>
-  <div class="card"><b>Ядро плагинов</b><small id="api-ver">API —</small></div>
+
+ <section class="page" id="p-set">
+  <header class="page-head">
+   <h1>Настройки</h1>
+  </header>
+
+  <div class="card">
+   <div class="card-head">
+    <svg viewBox="0 0 24 24" class="ic"><path d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 8a1 1 0 110 2 1 1 0 010-2zm-1-6h2v5h-2V5z"/></svg>
+    <b>Тема</b>
+   </div>
+   <div class="seg" id="mode">
+    <button data-v="auto">Системная</button>
+    <button data-v="light">Светлая</button>
+    <button data-v="dark">Тёмная</button>
+   </div>
+  </div>
+
+  <div class="card">
+   <div class="card-head">
+    <svg viewBox="0 0 24 24" class="ic"><path d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 0v18a9 9 0 000-18z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4"/></svg>
+    <b>Цвет</b>
+   </div>
+   <small class="card-hint">Системный акцент или свой оттенок</small>
+   <div class="sws" id="sws"></div>
+  </div>
+
+  <div class="card">
+   <div class="card-head">
+    <svg viewBox="0 0 24 24" class="ic"><path d="M12 2l2 7 7 2-7 2-2 7-2-7-7-2 7-2z"/></svg>
+    <b>Тема плагина</b>
+   </div>
+   <small class="card-hint">Свои темы, установленные плагинами</small>
+   <div class="sws" id="plugin-themes"></div>
+  </div>
+
+  <div class="card">
+   <div class="card-head">
+    <svg viewBox="0 0 24 24" class="ic"><path d="M17 7h-4V5a3 3 0 00-6 0v2H3v12a2 2 0 002 2h14a2 2 0 002-2V7h-4zM9 5a1 1 0 012 0v2H9V5z"/></svg>
+    <b>Вибро-отклик</b>
+   </div>
+   <div class="row">
+    <div class="grow"><small class="card-hint">Работает на Android</small></div>
+    <label class="sw"><input type="checkbox" id="vib"><i></i></label>
+   </div>
+   <div class="seg" id="pow">
+    <button data-v="0">Слабая</button>
+    <button data-v="1">Средняя</button>
+    <button data-v="2">Сильная</button>
+   </div>
+  </div>
+
+  <div class="card">
+   <div class="card-head">
+    <svg viewBox="0 0 24 24" class="ic"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+    <b>Анимации</b>
+   </div>
+   <div class="row">
+    <div class="grow"><small class="card-hint">Плавные переходы интерфейса</small></div>
+    <label class="sw"><input type="checkbox" id="anim"><i></i></label>
+   </div>
+  </div>
+
+  <div class="card">
+   <div class="card-head">
+    <svg viewBox="0 0 24 24" class="ic"><path d="M12 2l8 4v6c0 5-3.4 9.4-8 10-4.6-.6-8-5-8-10V6l8-4z"/></svg>
+    <b>Ядро плагинов</b>
+   </div>
+   <small class="card-hint" id="api-ver">API —</small>
+  </div>
  </section>
 </main>
+
 <nav id="nav"></nav>
 </div>
 
@@ -59,9 +146,18 @@
 <div id="plugin-overlays"></div>
 <div id="plugin-notifications"></div>
 
-<div id="sheet"><div><h1 style="margin-top:0">Новый плагин</h1>
- <small class="sheet-hint">Код плагина — это JavaScript. Ставьте только то, чему доверяете.</small>
- <textarea id="code" spellcheck="false"></textarea>
- <div class="row" style="margin-top:14px"><button class="btn t grow" id="cancel">Отмена</button><button class="btn grow" id="inst">Установить</button></div></div></div>
+<div id="sheet">
+ <div class="sheet-inner">
+  <div class="sheet-handle"></div>
+  <h1>Новый плагин</h1>
+  <small class="sheet-hint">Код плагина — это JavaScript. Ставьте только то, чему доверяете.</small>
+  <textarea id="code" spellcheck="false"></textarea>
+  <div class="btn-row">
+   <button class="btn tonal grow" id="cancel">Отмена</button>
+   <button class="btn filled grow" id="inst">Установить</button>
+  </div>
+ </div>
+</div>
+
 <div id="toast"></div>
 <script src="app.js"></script></body></html>
