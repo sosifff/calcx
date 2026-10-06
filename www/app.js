@@ -1,6 +1,6 @@
 /* =========================================================
-   CalcX — ядро с системой плагинов API 3.0
-   + блок «Связаться / Поддержать» на странице Плагинов
+   CalcX v3 — ядро с системой плагинов API 3.0
+   Material 3 Expressive · без эмодзи · с блоком автора
    ========================================================= */
 (function(){
 'use strict';
@@ -75,7 +75,7 @@ const toast = m => {
   t.textContent = String(m);
   t.classList.add('on');
   clearTimeout(tt);
-  tt = setTimeout(() => t.classList.remove('on'), 2200);
+  tt = setTimeout(() => t.classList.remove('on'), 2400);
 };
 
 window.addEventListener('error', e => {
@@ -91,7 +91,7 @@ window.addEventListener('unhandledrejection', e => {
 });
 
 /* =========================================================
-   ТЕМА
+   ТЕМА — Material You
    ========================================================= */
 function sysHue(){
   try {
@@ -118,17 +118,19 @@ const HUES = [
 function palMap(d){
   const P = PAL;
   return d ? {
-    bg: P.n1_900, sf: P.n1_800, sc: P.n1_700,
+    bg: P.n1_900, sf: P.n1_800, sc: P.n1_700, sfc_hi: P.n1_700,
     pr: P.a1_200, onpr: P.a1_800,
     pc: P.a1_700, onpc: P.a1_100,
     tc: P.a3_700, ontc: P.a3_100,
-    tx: P.n1_100, tx2: P.n2_200, ol: P.n2_700
+    tx: P.n1_100, tx2: P.n2_200, ol: P.n2_700,
+    outline_variant: P.n2_800
   } : {
-    bg: P.n1_10, sf: P.n1_50, sc: P.n2_100,
+    bg: P.n1_10, sf: P.n1_50, sc: P.n2_100, sfc_hi: P.n2_50,
     pr: P.a1_600, onpr: P.a1_0,
     pc: P.a1_100, onpc: P.a1_900,
     tc: P.a3_100, ontc: P.a3_900,
-    tx: P.n1_900, tx2: P.n2_700, ol: P.n2_200
+    tx: P.n1_900, tx2: P.n2_700, ol: P.n2_200,
+    outline_variant: P.n2_100
   };
 }
 
@@ -141,24 +143,30 @@ function applyTheme(){
     const t = h + 60;
 
     let p;
-    if (S.hue === 'sys' && PAL && PAL.a1_600) p = palMap(dark);
-    else if (dark) p = {
-      bg: H(h,14,8), sf: H(h,14,13), sc: H(h,12,20),
-      pr: H(h,60,76), onpr: H(h,60,12),
-      pc: H(h,45,26), onpc: H(h,70,90),
-      tc: H(t,30,26), ontc: H(t,60,90),
-      tx: H(h,10,90), tx2: H(h,8,68), ol: H(h,8,32)
-    };
-    else p = {
-      bg: H(h,30,97), sf: H(h,22,92), sc: H(h,20,86),
-      pr: H(h,55,36), onpr: '#fff',
-      pc: H(h,65,86), onpc: H(h,80,10),
-      tc: H(t,40,84), ontc: H(t,80,10),
-      tx: H(h,10,10), tx2: H(h,8,38), ol: H(h,10,80)
-    };
+    if (S.hue === 'sys' && PAL && PAL.a1_600) {
+      p = palMap(dark);
+    } else if (dark) {
+      p = {
+        bg: H(h,14,8), sf: H(h,14,13), sc: H(h,12,20), sfc_hi: H(h,12,24),
+        pr: H(h,60,76), onpr: H(h,60,12),
+        pc: H(h,45,26), onpc: H(h,70,90),
+        tc: H(t,30,26), ontc: H(t,60,90),
+        tx: H(h,10,90), tx2: H(h,8,68), ol: H(h,8,32),
+        outline_variant: H(h,8,22)
+      };
+    } else {
+      p = {
+        bg: H(h,30,97), sf: H(h,22,92), sc: H(h,20,86), sfc_hi: H(h,22,88),
+        pr: H(h,55,36), onpr: '#fff',
+        pc: H(h,65,86), onpc: H(h,80,10),
+        tc: H(t,40,84), ontc: H(t,80,10),
+        tx: H(h,10,10), tx2: H(h,8,38), ol: H(h,10,80),
+        outline_variant: H(h,15,90)
+      };
+    }
 
     const r = document.documentElement.style;
-    for (const k in p) r.setProperty('--' + k, p[k]);
+    for (const k in p) r.setProperty('--' + k.replace(/_/g, '-'), p[k]);
     r.colorScheme = dark ? 'dark' : 'light';
     const mt = document.querySelector('meta[name=theme-color]');
     if (mt) mt.content = p.bg;
@@ -410,6 +418,7 @@ if (dispEl) {
   });
 }
 
+/* ripple-эффект */
 document.addEventListener('pointerdown', e => {
   const b = e.target.closest('.k,.btn,.hi');
   if (!b) return;
@@ -426,6 +435,7 @@ document.addEventListener('pointerdown', e => {
   setTimeout(() => s.remove(), 600);
 });
 
+/* клавиатура ПК */
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
   const m = { '*':'×', '/':'÷', '-':'−', 'Enter':'=', 'Backspace':'⌫', 'Escape':'AC' };
@@ -463,7 +473,7 @@ function emit(event, data){
    ========================================================= */
 const ICO = {
   calc: '<path d="M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2zm1 3v3h8V6H8zm0 6v2h2v-2H8zm4 0v2h2v-2h-2zm4 0v2h2v-2h-2zM8 16v2h2v-2H8zm4 0v2h2v-2h-2zm4 0v2h2v-2h-2z"/>',
-  hist: '<path d="M12 3a9 9 0 100 18 9 9 0 000-18zm1 4v4.6l3.4 2-.8 1.4L11 12.4V7h2z"/>',
+  hist: '<path d="M13 3a9 9 0 00-9 9H1l4 4 4-4H6a7 7 0 117 7 7 7 0 01-5-2l-1.4 1.4A9 9 0 1013 3zm-1 4v5l4 2 .8-1.3-3.3-1.7V7H12z"/>',
   plug: '<path d="M20.5 11H19V7a2 2 0 00-2-2h-4V3.5a2.5 2.5 0 00-5 0V5H4a2 2 0 00-2 2v3.8h1.5a2.7 2.7 0 010 5.4H2V20a2 2 0 002 2h3.8v-1.5a2.7 2.7 0 015.4 0V22H17a2 2 0 002-2v-4h1.5a2.5 2.5 0 000-5z"/>',
   set: '<path fill-rule="evenodd" d="M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zM19.4 13a7.7 7.7 0 000-2l2-1.6-2-3.4-2.4 1a7 7 0 00-1.7-1L15 3.5h-4l-.4 2.5a7 7 0 00-1.7 1l-2.4-1-2 3.4 2 1.6a7.7 7.7 0 000 2l-2 1.6 2 3.4 2.4-1a7 7 0 001.7 1l.4 2.5h4l.4-2.5a7 7 0 001.7-1l2.4 1 2-3.4z"/>'
 };
@@ -505,7 +515,7 @@ function addPage(opts){
   const pg = document.createElement('section');
   pg.className = 'page';
   pg.id = 'p-' + opts.id;
-  $('#main').append(pg);
+  $('#main') || $('main').append(pg);
 
   const tab = document.createElement('button');
   tab.className = 'tab';
@@ -588,7 +598,7 @@ const UI = {
 
   button(opts){
     return UI.el('button', {
-      class: 'btn ' + (opts.variant || ''),
+      class: 'btn ' + (opts.variant || 'filled'),
       text: opts.label || '',
       onClick: opts.onClick || (() => {})
     });
@@ -657,9 +667,9 @@ const UI = {
     if (opts.content) m.append(opts.content);
 
     const actions = UI.el('div', { class: 'modal-actions' });
-    (opts.actions || [{ label: 'Закрыть', variant: 't' }]).forEach(a => {
+    (opts.actions || [{ label: 'Закрыть', variant: 'tonal' }]).forEach(a => {
       const b = UI.el('button', {
-        class: 'btn ' + (a.variant || ''),
+        class: 'btn ' + (a.variant || 'tonal'),
         text: a.label || 'OK',
         onClick: () => {
           if (a.onClick) a.onClick();
@@ -1056,7 +1066,7 @@ function runCode(src){
 }
 
 /* =========================================================
-   ВСТРОЕННЫЕ ПЛАГИНЫ
+   ВСТРОЕННЫЕ ПЛАГИНЫ — без эмодзи, с буквенными иконками
    ========================================================= */
 registerPlugin({
   id: 'sci',
@@ -1064,10 +1074,11 @@ registerPlugin({
   description: 'sin, cos, tan (в градусах), ln, log, корень, π и степень',
   version: '2.0',
   apiVersion: '3.0',
-  author: 'Calc',
+  author: 'CalcX',
   icon: 'S',
   onLoad(a){
-    [['sin','sin('],['cos','cos('],['tan','tan('],['ln','ln('],['log','log('],['√','√('],['π','π'],['e','e'],['x^y','^']]
+    [['sin','sin('],['cos','cos('],['tan','tan('],['ln','ln('],['log','log('],
+     ['√','√('],['π','π'],['e','e'],['x^y','^']]
       .forEach(([l, i]) => a.addButton({ label: l, insert: i }));
   }
 }, 1);
@@ -1075,14 +1086,15 @@ registerPlugin({
 registerPlugin({
   id: 'vat',
   name: 'НДС',
-  description: 'Кнопки «+НДС» и «-НДС» с настраиваемой ставкой',
+  description: 'Кнопки «+НДС» и «−НДС» с настраиваемой ставкой',
   version: '2.0',
   apiVersion: '3.0',
-  author: 'Calc',
+  author: 'CalcX',
   icon: 'Н',
   settings: {
-    rate: { type: 'number', label: 'Ставка, %', default: 20, min: 0, max: 100, step: 0.5 },
-    labelMode: { type: 'seg', label: 'Подписи', default: 'short',
+    rate: { type: 'number', label: 'Ставка, %', default: 20, min: 0, max: 100, step: 0.5,
+      hint: 'Например, 20 для России' },
+    labelMode: { type: 'seg', label: 'Подписи кнопок', default: 'short',
       options: [{ value: 'short', label: '+НДС' }, { value: 'full', label: 'С налогом' }] }
   },
   onLoad(a){
@@ -1097,7 +1109,7 @@ registerPlugin({
         x.setExpr(fmt(v * mul));
       };
       a.addButton({ label: short ? '+НДС' : 'С налогом', onClick: f(k) });
-      a.addButton({ label: short ? '-НДС' : 'Без налога', onClick: f(1 / k) });
+      a.addButton({ label: short ? '−НДС' : 'Без налога', onClick: f(1 / k) });
     };
     render();
     a.onSettingsChange(render);
@@ -1107,10 +1119,10 @@ registerPlugin({
 registerPlugin({
   id: 'rnd',
   name: 'Случайное число',
-  description: 'Вставляет случайное число',
+  description: 'Вставляет случайное число с вибро-откликом',
   version: '2.0',
   apiVersion: '3.0',
-  author: 'Calc',
+  author: 'CalcX',
   icon: 'R',
   settings: {
     min: { type: 'number', label: 'Минимум', default: 1, min: 0, max: 9999, step: 1 },
@@ -1119,7 +1131,7 @@ registerPlugin({
   },
   onLoad(a){
     a.addButton({
-      label: 'random',
+      label: 'rnd',
       onClick: x => {
         let lo = +x.getSetting('min') || 1, hi = +x.getSetting('max') || 100;
         if (hi < lo) { const t = lo; lo = hi; hi = t; }
@@ -1137,7 +1149,7 @@ registerPlugin({
   description: 'Тест вибрации и диагностика',
   version: '2.0',
   apiVersion: '3.0',
-  author: 'Calc',
+  author: 'CalcX',
   icon: 'V',
   onLoad(a){
     a.addButton({
@@ -1168,7 +1180,7 @@ registerPlugin({
   description: 'Показывает вкладки, store, ui, хуки, темы',
   version: '1.0',
   apiVersion: '3.0',
-  author: 'Calc',
+  author: 'CalcX',
   icon: 'D',
   onLoad(a){
     a.addPage({
@@ -1185,9 +1197,10 @@ registerPlugin({
           content: (() => {
             const wrap = UI.el('div');
             const out = UI.el('b', { text: String(a.store.get('count', 0)) });
-            out.style.fontSize = '24px';
+            out.style.fontSize = '28px';
             out.style.display = 'block';
-            out.style.margin = '10px 0';
+            out.style.margin = '12px 0';
+            out.style.color = 'var(--pr)';
             wrap.append(out);
             const inc = UI.button({
               label: '+1',
@@ -1200,10 +1213,11 @@ registerPlugin({
             });
             const rst = UI.button({
               label: 'Сброс',
-              variant: 't',
+              variant: 'tonal',
               onClick: () => { a.store.set('count', 0); out.textContent = '0'; }
             });
             const row = UI.el('div', { class: 'row' });
+            row.style.gap = '8px';
             row.append(inc, rst);
             wrap.append(row);
             return wrap;
@@ -1215,31 +1229,35 @@ registerPlugin({
           content: (() => {
             const wrap = UI.el('div');
             wrap.append(UI.toggle({
-              label: 'Пример переключателя',
+              label: 'Переключатель',
               value: true,
               onChange: v => a.toast('Значение: ' + v)
             }));
             const sel = UI.select({
-              options: [{ value: 'a', label: 'А' }, { value: 'b', label: 'Б' }, { value: 'c', label: 'В' }],
+              options: [
+                { value: 'a', label: 'А' },
+                { value: 'b', label: 'Б' },
+                { value: 'c', label: 'В' }
+              ],
               value: 'a',
               onChange: v => a.toast('Выбрано: ' + v)
             });
-            sel.style.marginTop = '10px';
+            sel.style.marginTop = '12px';
             wrap.append(sel);
             const b = UI.button({
               label: 'Открыть модалку',
               onClick: () => {
                 UI.modal({
-                  title: 'Привет!',
+                  title: 'Привет',
                   content: UI.el('div', { text: 'Это модальное окно из плагина.' }),
                   actions: [
-                    { label: 'Отмена', variant: 't' },
-                    { label: 'OK', onClick: () => a.toast('OK!') }
+                    { label: 'Отмена', variant: 'tonal' },
+                    { label: 'OK', variant: 'filled', onClick: () => a.toast('OK!') }
                   ]
                 });
               }
             });
-            b.style.marginTop = '10px';
+            b.style.marginTop = '12px';
             wrap.append(b);
             return wrap;
           })()
@@ -1305,7 +1323,7 @@ function bindAuthorBlock(){
       vib([10, 30, 10]);
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(DONATE_CARD).then(
-          () => toast('Номер карты скопирован: ' + DONATE_CARD),
+          () => toast('Номер карты скопирован'),
           () => toast('Номер: ' + DONATE_CARD)
         );
       } else {
@@ -1337,7 +1355,8 @@ function rPlug(){
       '</div>' +
       (hasSettings ?
         '<div class="pl-head"><span>Настройки плагина</span>' +
-        '<svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg></div>' +
+        '<svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">' +
+        '<path d="M7 10l5 5 5-5z"/></svg></div>' +
         '<div class="pl-body"></div>' : '');
 
     c.querySelector('.ava').textContent = p.icon || (p.name || '?')[0];
@@ -1392,8 +1411,8 @@ function rPlug(){
 
     if (!BUILTIN.has(p.id)) {
       const d = document.createElement('button');
-      d.className = 'btn t';
-      d.style.cssText = 'margin-top:12px;padding:8px 16px;font-size:13px';
+      d.className = 'btn tonal';
+      d.style.cssText = 'margin-top:14px;padding:10px 18px;font-size:13px';
       d.textContent = 'Удалить';
       d.onclick = () => {
         unload(p.id);
@@ -1412,7 +1431,7 @@ function rPlug(){
     l.append(c);
   });
 
-  /* После списка — привязываем обработчики к блоку автора */
+  /* Привязываем блок автора */
   bindAuthorBlock();
 }
 
@@ -1534,11 +1553,22 @@ const TPL = [
 "    vib:  { type: 'bool',   label: 'Вибро', default: true }",
 '  },',
 '  onLoad(api) {',
+'    // кнопка над клавиатурой',
 '    api.addButton({',
 "      label: 'Привет',",
 '      onClick: a => {',
 "        a.toast('Привет из плагина!');",
 "        a.vibrate(20);",
+'      }',
+'    });',
+'',
+'    // своя вкладка',
+'    api.addPage({',
+"      id: 'my-page',",
+"      title: 'Моя',",
+'      render: root => {',
+"        root.innerHTML = '';",
+"        root.append(api.ui.el('h1', { text: 'Моя страница' }));",
 '      }',
 '    });',
 '  },',
@@ -1636,7 +1666,12 @@ if (swsEl) {
     b.title = n;
     b.dataset.h = h;
     b.style.background = 'hsl(' + (h === 'sys' ? sysHue() : h) + ' 60% 50%)';
-    if (h === 'sys') { b.textContent = 'A'; b.style.color = '#fff'; b.style.fontWeight = '700'; }
+    if (h === 'sys') {
+      b.textContent = 'A';
+      b.style.color = '#fff';
+      b.style.fontWeight = '700';
+      b.style.fontSize = '14px';
+    }
     b.onclick = () => { S.hue = h; saveS(); applyTheme(); sw(); vib(); };
     swsEl.append(b);
   });
