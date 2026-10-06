@@ -2,6 +2,8 @@ name: Build APK
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ main, master ]
 
 permissions:
   contents: write
@@ -21,19 +23,71 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      # ──────── Capacitor проект ────────
       - name: Capacitor project
         run: |
           npm init -y
-          npm i @capacitor/core@6 @capacitor/android@6
-          npm i -D @capacitor/cli@6
-          npx cap init Calculator com.gkk.calculator --web-dir=www
+          npm i @capacitor/core@6 @capacitor/android@6 @capacitor/app@6
+          npm i -D @capacitor/cli@6 @capacitor/assets@3
+          npx cap init CalcX com.gkk.calcx --web-dir=www
           npx cap add android
 
-      - name: Native code (vibration, Material You, .calc files)
+      # ──────── Веб-файлы в www/ ────────
+      - name: Prepare web assets
         run: |
-          D=android/app/src/main/java/com/gkk/calculator
+          mkdir -p www
+          if [ -f index.html ]; then cp index.html www/; fi
+          if [ -f app.js ];     then cp app.js     www/; fi
+          if [ -f style.css ];  then cp style.css  www/; fi
+
+      # ──────── Имя приложения: CalcX ────────
+      - name: Set app name to CalcX
+        run: |
+          python3 - <<'PY'
+          import os
+          p = 'android/app/src/main/res/values/strings.xml'
+          os.makedirs(os.path.dirname(p), exist_ok=True)
+          content = '''<?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="app_name">CalcX</string>
+              <string name="title_activity_main">CalcX</string>
+              <string name="package_name">com.gkk.calcx</string>
+              <string name="custom_url_scheme">com.gkk.calcx</string>
+          </resources>
+          '''
+          open(p, 'w', encoding='utf-8').write(content)
+          print('strings.xml записан: CalcX')
+          PY
+
+      # ──────── Иконка из assets/icon.png ────────
+      - name: Generate app icons
+        run: |
+          if [ -f assets/icon.png ]; then
+            echo "Нашёл assets/icon.png ($(stat -c %s assets/icon.png) байт)"
+            npx @capacitor/assets generate \
+              --android \
+              --iconBackgroundColor '#3B2C00' \
+              --iconBackgroundColorDark '#3B2C00'
+          elif [ -f icon.png ]; then
+            echo "Нашёл icon.png в корне, переношу в assets/"
+            mkdir -p assets
+            cp icon.png assets/icon.png
+            npx @capacitor/assets generate \
+              --android \
+              --iconBackgroundColor '#3B2C00' \
+              --iconBackgroundColorDark '#3B2C00'
+          else
+            echo "⚠ assets/icon.png не найден — используется дефолтная иконка"
+          fi
+
+      # ──────── Нативный код + edge-to-edge ────────
+      - name: Native code (vibration, Material You, .calc, edge-to-edge)
+        run: |
+          D=android/app/src/main/java/com/gkk/calcx
+          mkdir -p $D
+
           cat > $D/NativeTools.java <<'EOF'
-          package com.gkk.calculator;
+          package com.gkk.calcx;
 
           import android.content.Context;
           import android.os.Build;
@@ -79,7 +133,10 @@ jobs:
             public void getColors(PluginCall call) {
               if (Build.VERSION.SDK_INT < 31) { call.reject("Android 12+ required"); return; }
               JSObject o = new JSObject();
-              String[][] sets = {{"a1", "system_accent1_"}, {"a2", "system_accent2_"}, {"a3", "system_accent3_"}, {"n1", "system_neutral1_"}, {"n2", "system_neutral2_"}};
+              String[][] sets = {
+                {"a1", "system_accent1_"}, {"a2", "system_accent2_"}, {"a3", "system_accent3_"},
+                {"n1", "system_neutral1_"}, {"n2", "system_neutral2_"}
+              };
               int[] tones = {0, 10, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000};
               for (String[] s : sets) {
                 for (int t : tones) {
@@ -105,12 +162,20 @@ jobs:
             }
           }
           EOF
+
           cat > $D/MainActivity.java <<'EOF'
-          package com.gkk.calculator;
+          package com.gkk.calcx;
 
           import android.content.Intent;
+          import android.graphics.Color;
           import android.net.Uri;
+          import android.os.Build;
           import android.os.Bundle;
+          import android.view.View;
+          import android.view.Window;
+          import android.view.WindowManager;
+          import androidx.core.view.WindowCompat;
+          import androidx.core.view.WindowInsetsControllerCompat;
           import com.getcapacitor.BridgeActivity;
           import java.io.ByteArrayOutputStream;
           import java.io.InputStream;
@@ -121,7 +186,42 @@ jobs:
             public void onCreate(Bundle savedInstanceState) {
               registerPlugin(NativeTools.class);
               super.onCreate(savedInstanceState);
+
+              Window w = getWindow();
+              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                WindowCompat.setDecorFitsSystemWindows(w, false);
+              } else {
+                w.getDecorView().setSystemUiVisibility(
+                  View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                  View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
+                  View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                );
+              }
+              w.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+              w.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+              w.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+              w.setStatusBarColor(Color.TRANSPARENT);
+              w.setNavigationBarColor(Color.TRANSPARENT);
+
+              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                w.setNavigationBarContrastEnforced(false);
+                w.setStatusBarContrastEnforced(false);
+              }
+
+              WindowInsetsControllerCompat c =
+                new WindowInsetsControllerCompat(w, w.getDecorView());
+              c.setAppearanceLightStatusBars(false);
+              c.setAppearanceLightNavigationBars(false);
+
               handle(getIntent(), false);
+            }
+
+            @Override
+            public void onWindowFocusChanged(boolean hasFocus) {
+              super.onWindowFocusChanged(hasFocus);
+              if (hasFocus && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+              }
             }
 
             @Override
@@ -157,7 +257,8 @@ jobs:
               NativeTools.pendingText = text;
               NativeTools.pendingName = name;
               if (live && getBridge() != null && getBridge().getWebView() != null) {
-                final String js = "window.openCalcText&&window.openCalcText(" + JSONObject.quote(text) + "," + JSONObject.quote(name) + ")";
+                final String js = "window.openCalcText&&window.openCalcText("
+                  + JSONObject.quote(text) + "," + JSONObject.quote(name) + ")";
                 getBridge().getWebView().post(new Runnable() {
                   public void run() { getBridge().getWebView().evaluateJavascript(js, null); }
                 });
@@ -181,11 +282,45 @@ jobs:
           }
           EOF
 
+          # Edge-to-edge тема
+          mkdir -p android/app/src/main/res/values
+          cat > android/app/src/main/res/values/styles.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
+                  <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+                  <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+                  <item name="android:statusBarColor">@android:color/transparent</item>
+                  <item name="android:navigationBarColor">@android:color/transparent</item>
+                  <item name="android:windowLightStatusBar">false</item>
+                  <item name="android:windowLightNavigationBar">false</item>
+              </style>
+          </resources>
+          EOF
+
+          cat > android/app/src/main/res/values/colors.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="status_bar_color">#00000000</color>
+              <color name="navigation_bar_color">#00000000</color>
+          </resources>
+          EOF
+
+      # ──────── Патч AndroidManifest ────────
       - name: Patch AndroidManifest
         run: |
           python3 - <<'PY'
           p = 'android/app/src/main/AndroidManifest.xml'
           s = open(p, encoding='utf-8').read()
+
+          perms = ''
+          if 'android.permission.VIBRATE' not in s:
+              perms += '    <uses-permission android:name="android.permission.VIBRATE"/>\n'
+          if 'android.permission.CAMERA' not in s:
+              perms += '    <uses-permission android:name="android.permission.CAMERA"/>\n'
+          if perms:
+              s = s.replace('</manifest>', perms + '</manifest>')
+
           filters = r'''
               <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
@@ -208,12 +343,24 @@ jobs:
                 <data android:mimeType="text/plain"/>
               </intent-filter>
           '''
-          assert '</activity>' in s
-          s = s.replace('</activity>', filters + '</activity>', 1)
-          s = s.replace('</manifest>', '    <uses-permission android:name="android.permission.VIBRATE"/>\n</manifest>')
+          if 'android.intent.action.VIEW' not in s:
+              assert '</activity>' in s
+              s = s.replace('</activity>', filters + '</activity>', 1)
+
+          s = s.replace('android:theme="@style/AppTheme"',
+                        'android:theme="@style/AppTheme.NoActionBar"')
+
+          if 'android:configChanges' not in s:
+              s = s.replace(
+                'android:name=".MainActivity"',
+                'android:name=".MainActivity"\n            android:configChanges="orientation|screenSize|keyboardHidden|uiMode"'
+              )
+
           open(p, 'w', encoding='utf-8').write(s)
+          print('AndroidManifest пропатчен')
           PY
 
+      # ──────── Синхронизация и сборка ────────
       - name: Sync and build
         run: |
           npx cap sync android
@@ -223,11 +370,11 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: calculator-apk
+          name: CalcX-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
 
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: Calculator build ${{ github.run_number }}
+          name: CalcX build ${{ github.run_number }}
           files: android/app/build/outputs/apk/debug/app-debug.apk
