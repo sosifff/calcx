@@ -6,17 +6,42 @@
 <title>Калькулятор</title>
 <link rel="stylesheet" href="style.css"></head><body>
 <div id="app">
-<main id="main">
+<main>
  <section class="page on" id="p-calc"><div id="calc" style="height:100%">
   <div id="disp"><div id="ex">0</div><div id="rs"></div></div>
   <div id="extra"></div><div id="keys"></div></div></section>
  <section class="page" id="p-hist"><h1>История</h1><div id="hist"></div></section>
- <section class="page" id="p-plug"><h1>Плагины</h1><div id="plist"></div>
+ <section class="page" id="p-plug">
+  <h1>Плагины</h1>
+  <div id="plist"></div>
   <div class="row" style="margin:4px 0 16px">
-   <button class="btn grow" id="add">＋ Вставить код</button>
-   <label class="btn t grow" id="open" for="file" style="text-align:center;cursor:pointer">📂 Открыть .calc</label>
+   <button class="btn grow" id="add">Вставить код</button>
+   <label class="btn t grow" id="open" for="file">Открыть .calc</label>
   </div>
-  <input type="file" id="file" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none"></section>
+  <input type="file" id="file" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none">
+
+  <!-- НИЖНИЙ БЛОК: СВЯЗАТЬСЯ И ПОДДЕРЖАТЬ -->
+  <div class="author-card">
+   <div class="author-row" id="contact-row">
+    <div class="author-icon">
+     <svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+    </div>
+    <div class="author-grow">
+     <b>Связаться</b>
+     <small>@xcnak</small>
+    </div>
+   </div>
+   <div class="author-row" id="donate-row">
+    <div class="author-icon">
+     <svg viewBox="0 0 24 24" class="hand-icon"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm-1-13h2v3h3v2h-3v3h-2v-3H8v-2h3V7z"/></svg>
+    </div>
+    <div class="author-grow">
+     <b>Поддержать</b>
+     <small>2202 2062 5415 2148</small>
+    </div>
+   </div>
+  </div>
+ </section>
  <section class="page" id="p-set"><h1>Настройки</h1>
   <div class="card"><b>Тема</b><div class="seg" id="mode"><button data-v="auto">Системная</button><button data-v="light">Светлая</button><button data-v="dark">Тёмная</button></div></div>
   <div class="card"><b>Цвет</b><small>Системный акцент или свой оттенок</small><div class="sws" id="sws"></div></div>
@@ -30,15 +55,12 @@
 <nav id="nav"></nav>
 </div>
 
-<!-- контейнер для модалок плагинов -->
 <div id="plugin-modals"></div>
-<!-- контейнер для оверлеев (загрузки, эффекты) -->
 <div id="plugin-overlays"></div>
-<!-- контейнер для системных уведомлений -->
 <div id="plugin-notifications"></div>
 
 <div id="sheet"><div><h1 style="margin-top:0">Новый плагин</h1>
- <small style="color:var(--tx2);display:block;margin-bottom:10px">Код плагина — это JavaScript. Ставьте только то, чему доверяете.</small>
+ <small class="sheet-hint">Код плагина — это JavaScript. Ставьте только то, чему доверяете.</small>
  <textarea id="code" spellcheck="false"></textarea>
  <div class="row" style="margin-top:14px"><button class="btn t grow" id="cancel">Отмена</button><button class="btn grow" id="inst">Установить</button></div></div></div>
 <div id="toast"></div>
