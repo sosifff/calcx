@@ -23,46 +23,50 @@
   <header class="page-head">
    <h1>История</h1>
   </header>
-  <div id="hist"></div>
+  <div class="page-content">
+   <div id="hist"></div>
+  </div>
  </section>
 
  <section class="page" id="p-plug">
   <header class="page-head">
    <h1>Плагины</h1>
   </header>
-  <div id="plist"></div>
-  <div class="btn-row">
-   <button class="btn filled grow" id="add">
-    <svg viewBox="0 0 24 24" class="ic"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-    Вставить код
-   </button>
-   <label class="btn tonal grow" for="file">
-    <svg viewBox="0 0 24 24" class="ic"><path d="M20 6h-8l-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2z"/></svg>
-    Открыть .calc
-   </label>
-  </div>
-  <input type="file" id="file" hidden>
-
-  <div class="author-card">
-   <div class="author-row" id="contact-row">
-    <div class="author-icon">
-     <svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-    </div>
-    <div class="author-grow">
-     <b>Связаться</b>
-     <small>@xcnak</small>
-    </div>
-    <svg viewBox="0 0 24 24" class="chev"><path d="M9 6l6 6-6 6"/></svg>
+  <div class="page-content">
+   <div id="plist"></div>
+   <div class="btn-row">
+    <button class="btn filled grow" id="add">
+     <svg viewBox="0 0 24 24" class="ic"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+     Вставить код
+    </button>
+    <label class="btn tonal grow" for="file">
+     <svg viewBox="0 0 24 24" class="ic"><path d="M20 6h-8l-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2z"/></svg>
+     Открыть .calc
+    </label>
    </div>
-   <div class="author-row" id="donate-row">
-    <div class="author-icon accent">
-     <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+   <input type="file" id="file" hidden>
+
+   <div class="author-card">
+    <div class="author-row" id="contact-row">
+     <div class="author-icon">
+      <svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+     </div>
+     <div class="author-grow">
+      <b>Связаться</b>
+      <small>@xcnak</small>
+     </div>
+     <svg viewBox="0 0 24 24" class="chev"><path d="M9 6l6 6-6 6"/></svg>
     </div>
-    <div class="author-grow">
-     <b>Поддержать</b>
-     <small>2202 2062 5415 2148</small>
+    <div class="author-row" id="donate-row">
+     <div class="author-icon accent">
+      <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+     </div>
+     <div class="author-grow">
+      <b>Поддержать</b>
+      <small>2202 2062 5415 2148</small>
+     </div>
+     <svg viewBox="0 0 24 24" class="chev"><path d="M9 6l6 6-6 6"/></svg>
     </div>
-    <svg viewBox="0 0 24 24" class="chev"><path d="M9 6l6 6-6 6"/></svg>
    </div>
   </div>
  </section>
@@ -71,70 +75,73 @@
   <header class="page-head">
    <h1>Настройки</h1>
   </header>
+  <div class="page-content">
 
-  <div class="card">
-   <div class="card-head">
-    <svg viewBox="0 0 24 24" class="ic"><path d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 8a1 1 0 110 2 1 1 0 010-2zm-1-6h2v5h-2V5z"/></svg>
-    <b>Тема</b>
+   <div class="card">
+    <div class="card-head">
+     <svg viewBox="0 0 24 24" class="ic"><path d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 8a1 1 0 110 2 1 1 0 010-2zm-1-6h2v5h-2V5z"/></svg>
+     <b>Тема</b>
+    </div>
+    <div class="seg" id="mode">
+     <button data-v="auto">Системная</button>
+     <button data-v="light">Светлая</button>
+     <button data-v="dark">Тёмная</button>
+    </div>
    </div>
-   <div class="seg" id="mode">
-    <button data-v="auto">Системная</button>
-    <button data-v="light">Светлая</button>
-    <button data-v="dark">Тёмная</button>
-   </div>
-  </div>
 
-  <div class="card">
-   <div class="card-head">
-    <svg viewBox="0 0 24 24" class="ic"><path d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 0v18a9 9 0 000-18z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4"/></svg>
-    <b>Цвет</b>
+   <div class="card">
+    <div class="card-head">
+     <svg viewBox="0 0 24 24" class="ic"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4"/></svg>
+     <b>Цвет</b>
+    </div>
+    <small class="card-hint">Системный акцент или свой оттенок</small>
+    <div class="sws" id="sws"></div>
    </div>
-   <small class="card-hint">Системный акцент или свой оттенок</small>
-   <div class="sws" id="sws"></div>
-  </div>
 
-  <div class="card">
-   <div class="card-head">
-    <svg viewBox="0 0 24 24" class="ic"><path d="M12 2l2 7 7 2-7 2-2 7-2-7-7-2 7-2z"/></svg>
-    <b>Тема плагина</b>
+   <div class="card">
+    <div class="card-head">
+     <svg viewBox="0 0 24 24" class="ic"><path d="M12 2l2 7 7 2-7 2-2 7-2-7-7-2 7-2z"/></svg>
+     <b>Тема плагина</b>
+    </div>
+    <small class="card-hint">Свои темы, установленные плагинами</small>
+    <div class="sws" id="plugin-themes"></div>
    </div>
-   <small class="card-hint">Свои темы, установленные плагинами</small>
-   <div class="sws" id="plugin-themes"></div>
-  </div>
 
-  <div class="card">
-   <div class="card-head">
-    <svg viewBox="0 0 24 24" class="ic"><path d="M17 7h-4V5a3 3 0 00-6 0v2H3v12a2 2 0 002 2h14a2 2 0 002-2V7h-4zM9 5a1 1 0 012 0v2H9V5z"/></svg>
-    <b>Вибро-отклик</b>
+   <div class="card">
+    <div class="card-head">
+     <svg viewBox="0 0 24 24" class="ic"><path d="M17 7h-4V5a3 3 0 00-6 0v2H3v12a2 2 0 002 2h14a2 2 0 002-2V7h-4zM9 5a1 1 0 012 0v2H9V5z"/></svg>
+     <b>Вибро-отклик</b>
+    </div>
+    <div class="row">
+     <div class="grow"><small class="card-hint">Работает на Android</small></div>
+     <label class="sw"><input type="checkbox" id="vib"><i></i></label>
+    </div>
+    <div class="seg" id="pow">
+     <button data-v="0">Слабая</button>
+     <button data-v="1">Средняя</button>
+     <button data-v="2">Сильная</button>
+    </div>
    </div>
-   <div class="row">
-    <div class="grow"><small class="card-hint">Работает на Android</small></div>
-    <label class="sw"><input type="checkbox" id="vib"><i></i></label>
-   </div>
-   <div class="seg" id="pow">
-    <button data-v="0">Слабая</button>
-    <button data-v="1">Средняя</button>
-    <button data-v="2">Сильная</button>
-   </div>
-  </div>
 
-  <div class="card">
-   <div class="card-head">
-    <svg viewBox="0 0 24 24" class="ic"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
-    <b>Анимации</b>
+   <div class="card">
+    <div class="card-head">
+     <svg viewBox="0 0 24 24" class="ic"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+     <b>Анимации</b>
+    </div>
+    <div class="row">
+     <div class="grow"><small class="card-hint">Плавные переходы интерфейса</small></div>
+     <label class="sw"><input type="checkbox" id="anim"><i></i></label>
+    </div>
    </div>
-   <div class="row">
-    <div class="grow"><small class="card-hint">Плавные переходы интерфейса</small></div>
-    <label class="sw"><input type="checkbox" id="anim"><i></i></label>
-   </div>
-  </div>
 
-  <div class="card">
-   <div class="card-head">
-    <svg viewBox="0 0 24 24" class="ic"><path d="M12 2l8 4v6c0 5-3.4 9.4-8 10-4.6-.6-8-5-8-10V6l8-4z"/></svg>
-    <b>Ядро плагинов</b>
+   <div class="card">
+    <div class="card-head">
+     <svg viewBox="0 0 24 24" class="ic"><path d="M12 2l8 4v6c0 5-3.4 9.4-8 10-4.6-.6-8-5-8-10V6l8-4z"/></svg>
+     <b>Ядро плагинов</b>
+    </div>
+    <small class="card-hint" id="api-ver">API —</small>
    </div>
-   <small class="card-hint" id="api-ver">API —</small>
+
   </div>
  </section>
 </main>
