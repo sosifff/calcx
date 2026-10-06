@@ -7,7 +7,6 @@
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
 
-  /* Material 3 роли (light по умолчанию) */
   --bg:#f7f9fc;
   --sf:#eef1f6;
   --sc:#e1e5ec;
@@ -22,14 +21,12 @@
   --tx2:#41484d;
   --ol:#c1c7cd;
   --outline-variant:#e1e3e8;
-  --scrim:#000000;
 
   --r-xs:8px;
   --r-sm:12px;
   --r-md:16px;
   --r-lg:24px;
   --r-xl:32px;
-  --r-2xl:40px;
   --r-pill:999px;
 
   color-scheme:light dark;
@@ -54,8 +51,9 @@ main{flex:1;position:relative;overflow:hidden}
 
 /* ═══ СТРАНИЦЫ ═══ */
 .page{
-  position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;
-  padding:16px 16px 100px;
+  position:absolute;inset:0;
+  overflow-y:auto;overflow-x:hidden;
+  padding:0 0 100px;
   opacity:0;
   transform:translateY(12px) scale(.98);
   pointer-events:none;
@@ -67,18 +65,33 @@ main{flex:1;position:relative;overflow:hidden}
 .page.on{opacity:1;transform:none;pointer-events:auto}
 #p-calc{padding:0}
 
+/* Плавающий заголовок страницы */
 .page-head{
-  padding:20px 4px 12px;
-  position:sticky;top:0;z-index:5;
-  background:linear-gradient(var(--bg) 70%, transparent);
-  backdrop-filter:blur(20px);
-  -webkit-backdrop-filter:blur(20px);
-  margin:-16px -16px 8px;
-  padding-left:20px;
+  position:sticky;
+  top:0;
+  z-index:10;
+  background:linear-gradient(
+    var(--bg) 0%,
+    var(--bg) 75%,
+    rgba(0,0,0,0) 100%
+  );
+  padding:20px 4px 16px 20px;
+  margin:0;
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
 }
+
 .page-head h1{
-  font-size:32px;font-weight:400;margin:0;
+  font-size:32px;
+  font-weight:400;
+  margin:0;
   letter-spacing:-.5px;
+  color:var(--tx);
+}
+
+/* Содержимое страницы */
+.page-content{
+  padding:8px 16px 0;
 }
 
 h1{font-size:28px;font-weight:400;margin:8px 4px 16px;letter-spacing:-.3px}
@@ -622,6 +635,7 @@ button{touch-action:manipulation;font:inherit}
   .k{font-size:20px;letter-spacing:0}
   #ex{font-size:36px}
   h1{font-size:22px;margin:4px}
+  .page-head h1{font-size:22px}
 }
 
 @media (prefers-reduced-motion:reduce){
