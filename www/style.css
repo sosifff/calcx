@@ -112,6 +112,7 @@ main{
   scrollbar-width:none;
   -webkit-overflow-scrolling:touch;
   padding-bottom:calc(24px + var(--safe-bottom));
+  touch-action:pan-y;
 }
 .page-scroll::-webkit-scrollbar{display:none}
 
