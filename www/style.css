@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600&display=swap');
+
 :root{
   box-sizing:border-box;
   --bg:#f7f9fc;
@@ -97,11 +99,20 @@ main{
 }
 
 .page-head h1{
-  font-size:32px;
-  font-weight:400;
+  font-family:'Unbounded', system-ui, -apple-system, sans-serif;
+  font-size:26px;
+  font-weight:600;
   margin:0;
-  letter-spacing:-.5px;
+  letter-spacing:-.8px;
   color:var(--tx);
+}
+
+h1{
+  font-family:'Unbounded', system-ui, -apple-system, sans-serif;
+  font-size:26px;
+  font-weight:600;
+  margin:8px 4px 16px;
+  letter-spacing:-.8px;
 }
 
 .page-scroll{
@@ -119,8 +130,6 @@ main{
 .page-content{
   padding:4px 16px 16px;
 }
-
-h1{font-size:28px;font-weight:400;margin:8px 4px 16px;letter-spacing:-.3px}
 
 .back-btn{
   display:inline-flex;
@@ -174,6 +183,7 @@ h1{font-size:28px;font-weight:400;margin:8px 4px 16px;letter-spacing:-.3px}
   color:var(--tx);
   letter-spacing:-1.5px;
   line-height:1.05;
+  font-family:system-ui,-apple-system,"Roboto Flex","Roboto",sans-serif;
 }
 #ex.m{font-size:40px}
 #ex.s{font-size:28px;letter-spacing:-.5px}
@@ -185,6 +195,7 @@ h1{font-size:28px;font-weight:400;margin:8px 4px 16px;letter-spacing:-.3px}
   margin-top:6px;
   font-weight:400;
   letter-spacing:-.5px;
+  font-family:system-ui,-apple-system,"Roboto Flex","Roboto",sans-serif;
 }
 
 #disp.shake{animation:shk .4s}
@@ -236,6 +247,7 @@ h1{font-size:28px;font-weight:400;margin:8px 4px 16px;letter-spacing:-.3px}
   font-feature-settings:"tnum";
   letter-spacing:-1px;
   will-change:transform;
+  font-family:system-ui,-apple-system,"Roboto Flex","Roboto",sans-serif;
 }
 .k:active{transform:scale(.9)}
 
@@ -255,6 +267,7 @@ h1{font-size:28px;font-weight:400;margin:8px 4px 16px;letter-spacing:-.3px}
   color:var(--onpc);
   animation:none;
   letter-spacing:0;
+  font-family:system-ui,-apple-system,"Roboto Flex","Roboto",sans-serif;
 }
 
 @keyframes kin{from{opacity:0;transform:scale(.75)}}
@@ -305,6 +318,7 @@ nav::-webkit-scrollbar{display:none}
   padding:0;
   letter-spacing:.1px;
   transition:color .25s;
+  font-family:system-ui,-apple-system,"Roboto Flex","Roboto",sans-serif;
 }
 .tab i{
   width:64px;
@@ -336,7 +350,13 @@ nav::-webkit-scrollbar{display:none}
   border:1px solid var(--outline-variant);
 }
 @keyframes cin{from{opacity:0;transform:translateY(12px)}}
-.card b{font-weight:600;font-size:15px}
+
+.card b{
+  font-family:'Unbounded', system-ui, -apple-system, sans-serif;
+  font-weight:600;
+  font-size:14px;
+  letter-spacing:-.4px;
+}
 .card small{color:var(--tx2);display:block;margin-top:4px;line-height:1.4;font-size:13px}
 .card-hint{font-size:13px;color:var(--tx2)}
 
@@ -368,6 +388,7 @@ nav::-webkit-scrollbar{display:none}
   font-size:18px;
   flex:none;
   text-transform:uppercase;
+  font-family:'Unbounded', system-ui, sans-serif;
 }
 
 .sw{position:relative;width:52px;height:32px;flex:none}
@@ -421,6 +442,7 @@ nav::-webkit-scrollbar{display:none}
   cursor:pointer;
   transition:.25s;
   position:relative;
+  font-family:system-ui,-apple-system,"Roboto Flex","Roboto",sans-serif;
 }
 .seg button.on{
   background:var(--pc);
@@ -470,6 +492,7 @@ nav::-webkit-scrollbar{display:none}
   letter-spacing:.1px;
   background:var(--sc);
   color:var(--tx);
+  font-family:system-ui,-apple-system,"Roboto Flex","Roboto",sans-serif;
 }
 .btn.filled{background:var(--pr);color:var(--onpr)}
 .btn.tonal{background:var(--pc);color:var(--onpc)}
@@ -489,9 +512,14 @@ nav::-webkit-scrollbar{display:none}
 }
 .hi:active{transform:scale(.98);background:var(--sfc-hi)}
 .hi small{font-size:14px;color:var(--tx2);letter-spacing:-.2px}
-.hi b{font-size:24px;font-weight:400;display:block;margin-top:2px;letter-spacing:-.5px}
+.hi b{font-size:22px;font-weight:400;display:block;margin-top:2px;letter-spacing:-.5px}
 
-#pagelist .hi b{font-size:16px;font-weight:600;letter-spacing:-.1px}
+#pagelist .hi b{
+  font-family:'Unbounded', system-ui, sans-serif;
+  font-size:14px;
+  font-weight:600;
+  letter-spacing:-.3px;
+}
 #pagelist .hi small{font-size:13px;color:var(--tx2)}
 
 .empty{
@@ -706,7 +734,13 @@ button{touch-action:manipulation;font:inherit}
 .author-icon svg{width:22px;height:22px;fill:currentColor}
 
 .author-grow{flex:1;min-width:0;position:relative}
-.author-grow b{font-weight:600;display:block;font-size:15px;letter-spacing:-.1px}
+.author-grow b{
+  font-family:'Unbounded', system-ui, sans-serif;
+  font-weight:600;
+  display:block;
+  font-size:13px;
+  letter-spacing:-.2px;
+}
 .author-grow small{
   color:var(--tx2);
   display:block;
@@ -731,7 +765,7 @@ button{touch-action:manipulation;font:inherit}
   border-top:none;
   padding:12px 0 4px;
 }
-#open-plugins .author-grow b{font-size:14px}
+#open-plugins .author-grow b{font-size:13px}
 
 .modal-back{
   position:fixed;
@@ -762,7 +796,13 @@ button{touch-action:manipulation;font:inherit}
   box-shadow:0 12px 48px rgba(0,0,0,.2);
 }
 .modal-back.on .modal{transform:scale(1);opacity:1}
-.modal h2{margin:0 0 16px;font-size:22px;font-weight:500;letter-spacing:-.3px}
+.modal h2{
+  margin:0 0 16px;
+  font-size:18px;
+  font-family:'Unbounded', system-ui, sans-serif;
+  font-weight:600;
+  letter-spacing:-.4px;
+}
 .modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
 
 .overlay-load{
@@ -843,10 +883,6 @@ button{touch-action:manipulation;font:inherit}
 }
 .ctx-menu button:active{background:var(--sc)}
 
-#p-more .page-head h1,
-#p-plug .page-head h1,
-#p-plugin-view .page-head h1{font-size:28px}
-
 @media (orientation:landscape) and (max-height:520px){
   #calc{
     display:grid!important;
@@ -860,8 +896,8 @@ button{touch-action:manipulation;font:inherit}
   #keys{grid-column:2;grid-row:2;grid-auto-rows:minmax(40px,1fr);gap:6px;padding:0}
   .k{font-size:20px;letter-spacing:0}
   #ex{font-size:36px}
-  h1{font-size:22px;margin:4px}
-  .page-head h1{font-size:22px}
+  h1{font-size:20px;margin:4px}
+  .page-head h1{font-size:20px}
 }
 
 @media (prefers-reduced-motion:reduce){
