@@ -1771,15 +1771,20 @@ updatePluginsCount();
 window.addEventListener('online', () => emit('network', { online: true }));
 window.addEventListener('offline', () => emit('network', { online: false }));
 
-(async function requestPermissions(){
-  try {
+(function waitForNativeTools(){
+  let tries = 0;
+  function tryRequest(){
+    tries++;
     const C = window.Capacitor;
-    if (!C || !C.Plugins || !C.Plugins.NativeTools) return;
-    const N = C.Plugins.NativeTools;
-    if (N.requestAudio) {
-      try { await N.requestAudio(); } catch (e) {}
+    if (C && C.Plugins && C.Plugins.NativeTools && C.Plugins.NativeTools.requestAudio) {
+      C.Plugins.NativeTools.requestAudio()
+        .then(() => {})
+        .catch(() => {});
+    } else if (tries < 20) {
+      setTimeout(tryRequest, 300);
     }
-  } catch (e) {}
+  }
+  setTimeout(tryRequest, 500);
 })();
 
 })();
