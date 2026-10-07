@@ -50,7 +50,7 @@ jobs:
           </resources>
           '''
           open(p, 'w', encoding='utf-8').write(content)
-          print('strings.xml → CalcX')
+          print('strings.xml -> CalcX')
           PY
 
       - name: Generate app icons
@@ -333,7 +333,7 @@ jobs:
           }
           EOF
 
-      - name: Patch styles.xml (edge-to-edge)
+      - name: Patch styles.xml
         run: |
           python3 - <<'PY'
           import os, re
