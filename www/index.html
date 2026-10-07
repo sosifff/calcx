@@ -30,47 +30,13 @@
   </div>
  </section>
 
- <section class="page" id="p-plug">
+ <section class="page" id="p-more">
   <header class="page-head">
-   <h1>Плагины</h1>
+   <h1>Дополнительно</h1>
   </header>
   <div class="page-scroll">
    <div class="page-content">
-    <div id="plist"></div>
-    <div class="btn-row">
-     <button class="btn filled grow" id="add">
-      <svg viewBox="0 0 24 24" class="ic"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-      Вставить код
-     </button>
-     <label class="btn tonal grow" for="file">
-      <svg viewBox="0 0 24 24" class="ic"><path d="M20 6h-8l-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2z"/></svg>
-      Открыть .calc
-     </label>
-    </div>
-    <input type="file" id="file" hidden>
-
-    <div class="author-card">
-     <div class="author-row" id="contact-row">
-      <div class="author-icon">
-       <svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-      </div>
-      <div class="author-grow">
-       <b>Связаться</b>
-       <small>@xcnak</small>
-      </div>
-      <svg viewBox="0 0 24 24" class="chev"><path d="M9 6l6 6-6 6"/></svg>
-     </div>
-     <div class="author-row" id="donate-row">
-      <div class="author-icon accent">
-       <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-      </div>
-      <div class="author-grow">
-       <b>Поддержать</b>
-       <small>2202 2062 5415 2148</small>
-      </div>
-      <svg viewBox="0 0 24 24" class="chev"><path d="M9 6l6 6-6 6"/></svg>
-     </div>
-    </div>
+    <div id="pagelist"></div>
    </div>
   </div>
  </section>
@@ -81,6 +47,21 @@
   </header>
   <div class="page-scroll">
    <div class="page-content">
+
+    <div class="card">
+     <div class="card-head">
+      <svg viewBox="0 0 24 24" class="ic"><path d="M20.5 11H19V7a2 2 0 00-2-2h-4V3.5a2.5 2.5 0 00-5 0V5H4a2 2 0 00-2 2v3.8h1.5a2.7 2.7 0 010 5.4H2V20a2 2 0 002 2h3.8v-1.5a2.7 2.7 0 015.4 0V22H17a2 2 0 002-2v-4h1.5a2.5 2.5 0 000-5z"/></svg>
+      <b>Плагины</b>
+     </div>
+     <small class="card-hint">Расширения, темы и скрипты</small>
+     <div class="author-row" id="open-plugins" style="margin-top:10px;border-top:none;padding:12px 0 4px">
+      <div class="author-grow">
+       <b>Открыть список плагинов</b>
+       <small id="plugins-count">—</small>
+      </div>
+      <svg viewBox="0 0 24 24" class="chev"><path d="M9 6l6 6-6 6"/></svg>
+     </div>
+    </div>
 
     <div class="card">
      <div class="card-head">
@@ -148,6 +129,68 @@
     </div>
 
    </div>
+  </div>
+ </section>
+
+ <section class="page" id="p-plug">
+  <header class="page-head">
+   <button class="back-btn" id="plug-back">
+    <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
+    Назад
+   </button>
+   <h1>Плагины</h1>
+  </header>
+  <div class="page-scroll">
+   <div class="page-content">
+    <div id="plist"></div>
+    <div class="btn-row">
+     <button class="btn filled grow" id="add">
+      <svg viewBox="0 0 24 24" class="ic"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      Вставить код
+     </button>
+     <label class="btn tonal grow" for="file">
+      <svg viewBox="0 0 24 24" class="ic"><path d="M20 6h-8l-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2z"/></svg>
+      Открыть .calc
+     </label>
+    </div>
+    <input type="file" id="file" hidden>
+
+    <div class="author-card">
+     <div class="author-row" id="contact-row">
+      <div class="author-icon">
+       <svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+      </div>
+      <div class="author-grow">
+       <b>Связаться</b>
+       <small>@xcnak</small>
+      </div>
+      <svg viewBox="0 0 24 24" class="chev"><path d="M9 6l6 6-6 6"/></svg>
+     </div>
+     <div class="author-row" id="donate-row">
+      <div class="author-icon accent">
+       <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      </div>
+      <div class="author-grow">
+       <b>Поддержать</b>
+       <small>2202 2062 5415 2148</small>
+      </div>
+      <svg viewBox="0 0 24 24" class="chev"><path d="M9 6l6 6-6 6"/></svg>
+     </div>
+    </div>
+   </div>
+  </div>
+ </section>
+
+ <section class="page" id="p-plugin-view">
+  <header class="page-head">
+   <button class="back-btn" id="pv-back">
+    <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
+    Назад
+   </button>
+   <h1 id="pv-title">—</h1>
+  </header>
+  <div class="page-scroll">
+   <div class="page-content" id="pv-content"></div>
   </div>
  </section>
 </main>
