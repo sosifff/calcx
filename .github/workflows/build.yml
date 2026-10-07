@@ -23,7 +23,6 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # ──────── Capacitor проект ────────
       - name: Capacitor project
         run: |
           npm init -y
@@ -32,15 +31,10 @@ jobs:
           npx cap init CalcX com.gkk.calcx --web-dir=www
           npx cap add android
 
-      # ──────── Веб-файлы в www/ ────────
       - name: Prepare web assets
         run: |
-          mkdir -p www
-          if [ -f index.html ]; then cp index.html www/; fi
-          if [ -f app.js ];     then cp app.js     www/; fi
-          if [ -f style.css ];  then cp style.css  www/; fi
+          ls -la www/
 
-      # ──────── Имя приложения: CalcX ────────
       - name: Set app name to CalcX
         run: |
           python3 - <<'PY'
@@ -56,10 +50,9 @@ jobs:
           </resources>
           '''
           open(p, 'w', encoding='utf-8').write(content)
-          print('strings.xml → CalcX')
+          print('strings.xml -> CalcX')
           PY
 
-      # ──────── Иконка из assets/icon.png через Pillow ────────
       - name: Generate app icons
         run: |
           python3 -m pip install --quiet pillow
@@ -67,7 +60,7 @@ jobs:
           import os
           from PIL import Image, ImageDraw
 
-          src_candidates = ['assets/icon.png', 'icon.png']
+          src_candidates = ['assets/icon.png', 'icon.png', 'www/icon.png']
           src = None
           for c in src_candidates:
               if os.path.exists(c) and os.path.getsize(c) > 100:
@@ -75,7 +68,7 @@ jobs:
                   break
 
           if not src:
-              print('icon.png не найден или пуст — пропускаю')
+              print('icon.png не найден — пропускаю')
               raise SystemExit(0)
 
           print(f'Источник иконки: {src} ({os.path.getsize(src)} байт)')
@@ -95,7 +88,6 @@ jobs:
               d = os.path.join(base, folder)
               os.makedirs(d, exist_ok=True)
 
-              # Квадратная иконка с фоном #3B2C00
               sq = Image.new('RGBA', (size, size), (59, 44, 0, 255))
               resized = img.copy()
               resized.thumbnail((int(size*0.85), int(size*0.85)), Image.LANCZOS)
@@ -103,14 +95,12 @@ jobs:
               sq.paste(resized, offset, resized)
               sq.save(os.path.join(d, 'ic_launcher.png'))
 
-              # Круглая
               round_img = Image.new('RGBA', (size, size), (0,0,0,0))
               mask = Image.new('L', (size, size), 0)
               ImageDraw.Draw(mask).ellipse((0, 0, size, size), fill=255)
               round_img.paste(sq, (0,0), mask)
               round_img.save(os.path.join(d, 'ic_launcher_round.png'))
 
-              # Адаптивная foreground
               fg_size = int(size * 1.5)
               fg = Image.new('RGBA', (fg_size, fg_size), (0,0,0,0))
               fg_resized = img.copy()
@@ -122,7 +112,6 @@ jobs:
           print('Иконки сгенерированы')
           PY
 
-      # ──────── Нативный код ────────
       - name: Native code
         run: |
           D=android/app/src/main/java/com/gkk/calcx
@@ -131,7 +120,9 @@ jobs:
           cat > $D/NativeTools.java <<'EOF'
           package com.gkk.calcx;
 
+          import android.Manifest;
           import android.content.Context;
+          import android.content.pm.PackageManager;
           import android.os.Build;
           import android.os.VibrationEffect;
           import android.os.Vibrator;
@@ -141,8 +132,18 @@ jobs:
           import com.getcapacitor.PluginCall;
           import com.getcapacitor.PluginMethod;
           import com.getcapacitor.annotation.CapacitorPlugin;
+          import com.getcapacitor.annotation.Permission;
+          import com.getcapacitor.annotation.PermissionCallback;
 
-          @CapacitorPlugin(name = "NativeTools")
+          @CapacitorPlugin(
+            name = "NativeTools",
+            permissions = {
+              @Permission(
+                alias = "microphone",
+                strings = { Manifest.permission.RECORD_AUDIO }
+              )
+            }
+          )
           public class NativeTools extends Plugin {
             public static String pendingText = null;
             public static String pendingName = "";
@@ -202,13 +203,31 @@ jobs:
               }
               call.resolve(o);
             }
+
+            @PluginMethod
+            public void requestAudio(PluginCall call) {
+              if (Build.VERSION.SDK_INT >= 23 &&
+                  getContext().checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                    != PackageManager.PERMISSION_GRANTED) {
+                requestPermissionForAlias("microphone", call, "audioCallback");
+              } else {
+                call.resolve();
+              }
+            }
+
+            @PermissionCallback
+            private void audioCallback(PluginCall call) {
+              call.resolve();
+            }
           }
           EOF
 
           cat > $D/MainActivity.java <<'EOF'
           package com.gkk.calcx;
 
+          import android.Manifest;
           import android.content.Intent;
+          import android.content.pm.PackageManager;
           import android.graphics.Color;
           import android.net.Uri;
           import android.os.Build;
@@ -216,12 +235,16 @@ jobs:
           import android.view.View;
           import android.view.Window;
           import android.view.WindowManager;
+          import androidx.core.app.ActivityCompat;
+          import androidx.core.content.ContextCompat;
           import com.getcapacitor.BridgeActivity;
           import java.io.ByteArrayOutputStream;
           import java.io.InputStream;
           import org.json.JSONObject;
 
           public class MainActivity extends BridgeActivity {
+            private static final int REQ_PERMS = 1001;
+
             @Override
             public void onCreate(Bundle savedInstanceState) {
               registerPlugin(NativeTools.class);
@@ -243,7 +266,29 @@ jobs:
 
               w.getDecorView().setSystemUiVisibility(ui);
 
+              requestStartupPermissions();
+
               handle(getIntent(), false);
+            }
+
+            private void requestStartupPermissions() {
+              if (Build.VERSION.SDK_INT < 23) return;
+
+              boolean needAudio = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                    != PackageManager.PERMISSION_GRANTED;
+              boolean needCam = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                    != PackageManager.PERMISSION_GRANTED;
+
+              if (needAudio || needCam) {
+                java.util.ArrayList<String> list = new java.util.ArrayList<>();
+                if (needAudio) list.add(Manifest.permission.RECORD_AUDIO);
+                if (needCam) list.add(Manifest.permission.CAMERA);
+                ActivityCompat.requestPermissions(
+                  this,
+                  list.toArray(new String[0]),
+                  REQ_PERMS
+                );
+              }
             }
 
             @Override
@@ -316,8 +361,7 @@ jobs:
           }
           EOF
 
-      # ──────── Edge-to-edge: дописываем в существующий styles.xml ────────
-      - name: Patch styles.xml (edge-to-edge)
+      - name: Patch styles.xml
         run: |
           python3 - <<'PY'
           import os, re
@@ -343,7 +387,7 @@ jobs:
           </resources>
           '''
               open(styles, 'w', encoding='utf-8').write(content)
-              print('styles.xml создан с нуля (файла не было)')
+              print('styles.xml создан с нуля')
           else:
               s = open(styles, encoding='utf-8').read()
 
@@ -353,7 +397,6 @@ jobs:
                   '        <item name="android:navigationBarColor">@android:color/transparent</item>\n'
               )
 
-              # Ищем AppTheme и добавляем в него edge-to-edge
               pattern = r'(<style name="AppTheme"[^>]*>)(.*?)(</style>)'
 
               def repl(m):
@@ -365,16 +408,14 @@ jobs:
               s2, n = re.subn(pattern, repl, s, count=1, flags=re.DOTALL)
 
               if n == 0:
-                  # AppTheme не нашли — создадим вручную перед </resources>
                   s2 = s.replace('</resources>',
                       '    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">\n'
                       + additions + '    </style>\n</resources>')
 
               open(styles, 'w', encoding='utf-8').write(s2)
-              print(f'styles.xml обновлён (замен: {n})')
+              print(f'styles.xml обновлён ({n})')
           PY
 
-      # ──────── Патч AndroidManifest ────────
       - name: Patch AndroidManifest
         run: |
           python3 - <<'PY'
@@ -386,6 +427,12 @@ jobs:
               perms += '    <uses-permission android:name="android.permission.VIBRATE"/>\n'
           if 'android.permission.CAMERA' not in s:
               perms += '    <uses-permission android:name="android.permission.CAMERA"/>\n'
+          if 'android.permission.RECORD_AUDIO' not in s:
+              perms += '    <uses-permission android:name="android.permission.RECORD_AUDIO"/>\n'
+          if 'android.permission.INTERNET' not in s:
+              perms += '    <uses-permission android:name="android.permission.INTERNET"/>\n'
+          if 'android.permission.ACCESS_NETWORK_STATE' not in s:
+              perms += '    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>\n'
           if perms:
               s = s.replace('</manifest>', perms + '</manifest>')
 
@@ -425,7 +472,6 @@ jobs:
           print('AndroidManifest пропатчен')
           PY
 
-      # ──────── Синхронизация и сборка ────────
       - name: Sync and build
         run: |
           npx cap sync android
