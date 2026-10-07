@@ -34,7 +34,6 @@ const saveS = () => LS.set('s', S);
 
 let PAL = null;
 let currentPage = 'calc';
-let previousPage = 'calc';
 
 const vib = m => {
   if (!S.vib) return false;
@@ -471,7 +470,6 @@ function go(id){
   const prev = PAGES[currentPage];
   if (prev && prev.onHide) { try { prev.onHide(); } catch (e) {} }
 
-  previousPage = currentPage;
   currentPage = id;
 
   $$('.tab').forEach(t => t.classList.toggle('on', t.dataset.t === id));
