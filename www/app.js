@@ -1,22 +1,11 @@
-/* =========================================================
-   CalcX v3 — ядро с системой плагинов API 3.0
-   Тема плагина теперь перебивает системную палитру
-   ========================================================= */
 (function(){
 'use strict';
 
-/* =========================================================
-   КОНСТАНТЫ ЯДРА
-   ========================================================= */
 const API_VERSION = '3.0';
-
 const CONTACT_URL   = 'https://t.me/xcnak';
 const CONTACT_LABEL = '@xcnak';
 const DONATE_CARD   = '2202206254152148';
 
-/* =========================================================
-   УТИЛИТЫ
-   ========================================================= */
 const $ = s => document.querySelector(s);
 const $$ = s => Array.prototype.slice.call(document.querySelectorAll(s));
 
@@ -33,9 +22,6 @@ const LS = {
 
 const parseVer = v => String(v || '1.0').split('.').map(n => parseInt(n, 10) || 0);
 
-/* =========================================================
-   СОСТОЯНИЕ
-   ========================================================= */
 const S = Object.assign({
   mode: 'auto',
   hue: 'sys',
@@ -48,10 +34,8 @@ const saveS = () => LS.set('s', S);
 
 let PAL = null;
 let currentPage = 'calc';
+let previousPage = 'calc';
 
-/* =========================================================
-   ВИБРО
-   ========================================================= */
 const vib = m => {
   if (!S.vib) return false;
   const p = m || [8, 16, 28][S.pow] || 20;
@@ -64,9 +48,6 @@ const vib = m => {
 };
 document.addEventListener('click', () => { if (window._vf) { window._vf = 0; vib(); } });
 
-/* =========================================================
-   ТОСТЫ
-   ========================================================= */
 let tt;
 const toast = m => {
   const t = $('#toast');
@@ -89,9 +70,6 @@ window.addEventListener('unhandledrejection', e => {
   } catch (x) {}
 });
 
-/* =========================================================
-   ТЕМА — Material You + плагины
-   ========================================================= */
 function sysHue(){
   try {
     const d = document.createElement('div');
@@ -133,7 +111,6 @@ function palMap(d){
   };
 }
 
-/* Приводит ключ темы к виду без дефисов: '--bg' → 'bg', 'bg' → 'bg' */
 function normalizeKey(k){
   return String(k).replace(/^-+/, '');
 }
@@ -146,7 +123,6 @@ function applyTheme(){
     const H = (a, s, l) => 'hsl(' + (a % 360) + ' ' + s + '% ' + l + '%)';
     const t = h + 60;
 
-    /* 1. Базовая палитра */
     let p;
     if (S.hue === 'sys' && PAL && PAL.a1_600) {
       p = palMap(dark);
@@ -170,7 +146,6 @@ function applyTheme(){
       };
     }
 
-    /* 2. Накладываем тему плагина — перебивая всё */
     if (S.pluginTheme && THEMES[S.pluginTheme]) {
       const theme = THEMES[S.pluginTheme];
       const vars = dark ? theme.dark : theme.light;
@@ -182,7 +157,6 @@ function applyTheme(){
       }
     }
 
-    /* 3. Применяем CSS-переменные */
     const r = document.documentElement.style;
     for (const k in p) {
       r.setProperty('--' + k.replace(/_/g, '-'), p[k]);
@@ -197,9 +171,6 @@ function applyTheme(){
 }
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 
-/* =========================================================
-   МАТЕМАТИКА
-   ========================================================= */
 const D = Math.PI / 180;
 const F = {
   sin: x => Math.sin(x * D),
@@ -268,9 +239,6 @@ const fmt = n => {
   return String(s).replace('-', '−');
 };
 
-/* =========================================================
-   КАЛЬКУЛЯТОР
-   ========================================================= */
 let expr = LS.get('ex', '');
 let done = false;
 let hist = LS.get('h', []);
@@ -458,9 +426,6 @@ document.addEventListener('keydown', e => {
   }
 });
 
-/* =========================================================
-   ШИНА СОБЫТИЙ
-   ========================================================= */
 const EVENTS = {};
 function on(event, fn, pluginId){
   if (!EVENTS[event]) EVENTS[event] = [];
@@ -480,13 +445,10 @@ function emit(event, data){
   }
 }
 
-/* =========================================================
-   ВКЛАДКИ
-   ========================================================= */
 const ICO = {
   calc: '<path d="M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2zm1 3v3h8V6H8zm0 6v2h2v-2H8zm4 0v2h2v-2h-2zm4 0v2h2v-2h-2zM8 16v2h2v-2H8zm4 0v2h2v-2h-2zm4 0v2h2v-2h-2z"/>',
   hist: '<path d="M13 3a9 9 0 00-9 9H1l4 4 4-4H6a7 7 0 117 7 7 7 0 01-5-2l-1.4 1.4A9 9 0 1013 3zm-1 4v5l4 2 .8-1.3-3.3-1.7V7H12z"/>',
-  plug: '<path d="M20.5 11H19V7a2 2 0 00-2-2h-4V3.5a2.5 2.5 0 00-5 0V5H4a2 2 0 00-2 2v3.8h1.5a2.7 2.7 0 010 5.4H2V20a2 2 0 002 2h3.8v-1.5a2.7 2.7 0 015.4 0V22H17a2 2 0 002-2v-4h1.5a2.5 2.5 0 000-5z"/>',
+  more: '<path d="M6 10a2 2 0 100 4 2 2 0 000-4zm6 0a2 2 0 100 4 2 2 0 000-4zm6 0a2 2 0 100 4 2 2 0 000-4z"/>',
   set: '<path fill-rule="evenodd" d="M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zM19.4 13a7.7 7.7 0 000-2l2-1.6-2-3.4-2.4 1a7 7 0 00-1.7-1L15 3.5h-4l-.4 2.5a7 7 0 00-1.7 1l-2.4-1-2 3.4 2 1.6a7.7 7.7 0 000 2l-2 1.6 2 3.4 2.4-1a7 7 0 001.7 1l.4 2.5h4l.4-2.5a7 7 0 001.7-1l2.4 1 2-3.4z"/>'
 };
 
@@ -494,7 +456,7 @@ const PAGES = {};
 
 const navEl = $('#nav');
 if (navEl) {
-  [['calc','Счёт'],['hist','История'],['plug','Плагины'],['set','Настройки']].forEach(([id, l], i) => {
+  [['calc','Счёт'],['hist','История'],['more','Дополнительно'],['set','Настройки']].forEach(([id, l], i) => {
     const b = document.createElement('button');
     b.className = 'tab' + (i ? '' : ' on');
     b.dataset.t = id;
@@ -509,20 +471,20 @@ function go(id){
   const prev = PAGES[currentPage];
   if (prev && prev.onHide) { try { prev.onHide(); } catch (e) {} }
 
+  previousPage = currentPage;
+  currentPage = id;
+
   $$('.tab').forEach(t => t.classList.toggle('on', t.dataset.t === id));
   $$('.page').forEach(p => p.classList.toggle('on', p.id === 'p-' + id));
-  currentPage = id;
 
   if (id === 'hist') rHist();
   if (id === 'plug') rPlug();
+  if (id === 'more') rMorePages();
   const pg = PAGES[id];
   if (pg && pg.onShow) { try { pg.onShow(); } catch (e) {} }
   emit('page:open', { id });
 }
 
-/* =========================================================
-   ИСТОРИЯ
-   ========================================================= */
 function rHist(){
   const h = $('#hist');
   if (!h) return;
@@ -571,9 +533,79 @@ function rHist(){
   h.append(clear);
 }
 
-/* =========================================================
-   СТРАНИЦЫ ПЛАГИНОВ
-   ========================================================= */
+function rMorePages(){
+  const box = $('#pagelist');
+  if (!box) return;
+  box.innerHTML = '';
+
+  const list = Object.keys(PAGES).filter(id => PAGES[id].pluginId);
+
+  if (!list.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'Плагины пока не создали своих вкладок';
+    box.append(empty);
+    return;
+  }
+
+  list.forEach(id => {
+    const p = PAGES[id];
+    const card = document.createElement('div');
+    card.className = 'card hi';
+
+    const row = document.createElement('div');
+    row.className = 'row';
+
+    const ava = document.createElement('div');
+    ava.className = 'ava';
+    ava.innerHTML = '<svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:currentColor">' +
+      (p.icon || '<path d="M4 4h16v16H4z"/>') + '</svg>';
+
+    const g = document.createElement('div');
+    g.className = 'grow';
+    const b = document.createElement('b');
+    b.textContent = p.title || id;
+    const sm = document.createElement('small');
+    sm.textContent = 'Открыть';
+    g.append(b, sm);
+
+    const chev = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    chev.setAttribute('viewBox', '0 0 24 24');
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', 'M9 6l6 6-6 6');
+    chev.append(path);
+    chev.style.cssText = 'width:20px;height:20px;fill:none;stroke:var(--tx2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none';
+
+    row.append(ava, g, chev);
+    card.append(row);
+
+    card.onclick = () => openPluginView(id);
+    box.append(card);
+  });
+}
+
+function openPluginView(id){
+  const p = PAGES[id];
+  if (!p) return;
+
+  const title = $('#pv-title');
+  const content = $('#pv-content');
+  if (title) title.textContent = p.title || id;
+  if (content) {
+    content.innerHTML = '';
+    if (typeof p.render === 'function') {
+      try { p.render(content); } catch (e) { toast('Ошибка плагина: ' + e.message); }
+    }
+  }
+
+  $$('.tab').forEach(t => t.classList.remove('on'));
+  $$('.page').forEach(pp => pp.classList.toggle('on', pp.id === 'p-plugin-view'));
+  currentPage = 'plugin-view';
+
+  if (p.onShow) { try { p.onShow(); } catch (e) {} }
+  emit('page:open', { id: 'plugin-view:' + id });
+}
+
 function addPage(opts){
   if (!opts || !opts.id) throw new Error('нужен id страницы');
   if (PAGES[opts.id]) throw new Error('страница уже существует: ' + opts.id);
@@ -584,24 +616,16 @@ function addPage(opts){
   const main = $('main');
   if (main) main.append(pg);
 
-  const tab = document.createElement('button');
-  tab.className = 'tab';
-  tab.dataset.t = opts.id;
-  const icon = opts.icon || '<path d="M4 4h16v16H4z"/>';
-  tab.innerHTML = '<i><svg viewBox="0 0 24 24">' + icon + '</svg></i>' + (opts.title || opts.id);
-  tab.onclick = () => go(opts.id);
-  const nav = $('#nav');
-  if (nav) nav.append(tab);
-
   PAGES[opts.id] = {
     title: opts.title, icon: opts.icon,
     render: opts.render, onShow: opts.onShow, onHide: opts.onHide,
-    pageEl: pg, tabEl: tab, pluginId: opts._pluginId
+    pageEl: pg, tabEl: null, pluginId: opts._pluginId
   };
 
   if (typeof opts.render === 'function') {
     try { opts.render(pg); } catch (e) { toast('Ошибка страницы: ' + e.message); }
   }
+  rMorePages();
   return opts.id;
 }
 
@@ -609,14 +633,12 @@ function removePage(id){
   const p = PAGES[id];
   if (!p) return;
   p.pageEl.remove();
-  p.tabEl.remove();
+  if (p.tabEl) p.tabEl.remove();
   delete PAGES[id];
-  if (currentPage === id) go('calc');
+  if (currentPage === id) go('more');
+  rMorePages();
 }
 
-/* =========================================================
-   ХРАНИЛИЩЕ ПЛАГИНА
-   ========================================================= */
 const STORE_KEY = 'plugin_store';
 const ALL_STORE = LS.get(STORE_KEY, {});
 
@@ -633,9 +655,6 @@ function makeStore(pluginId){
   };
 }
 
-/* =========================================================
-   UI-КОМПОНЕНТЫ
-   ========================================================= */
 const UI = {
   el(tag, props, children){
     const e = document.createElement(tag);
@@ -788,16 +807,12 @@ const UI = {
   }
 };
 
-/* =========================================================
-   ТЕМЫ ПЛАГИНОВ
-   ========================================================= */
 const THEMES = LS.get('plugin_themes', {});
 function registerTheme(t){
   if (!t || !t.id) throw new Error('нужен id темы');
   THEMES[t.id] = t;
   LS.set('plugin_themes', THEMES);
   renderThemes();
-  /* Если эта тема уже выбрана — переприменяем */
   if (S.pluginTheme === t.id) applyTheme();
 }
 function setTheme(id){
@@ -811,7 +826,6 @@ function renderThemes(){
   if (!wrap) return;
   wrap.innerHTML = '';
 
-  /* Кнопка «без темы» */
   const none = UI.el('button', { title: 'Без плагинной темы' });
   none.style.background = 'var(--pc)';
   none.style.color = 'var(--onpc)';
@@ -823,7 +837,6 @@ function renderThemes(){
   Object.keys(THEMES).forEach(id => {
     const t = THEMES[id];
     const b = UI.el('button', { title: t.name || id });
-    /* Поддерживаем и '--pr', и 'pr' */
     const color =
       (t.light && (t.light['--pr'] || t.light.pr)) ||
       (t.dark && (t.dark['--pr'] || t.dark.pr)) ||
@@ -835,9 +848,6 @@ function renderThemes(){
   });
 }
 
-/* =========================================================
-   КОНТЕКСТНОЕ МЕНЮ РЕЗУЛЬТАТА
-   ========================================================= */
 const RESULT_ACTIONS = [];
 function addResultAction(a){ RESULT_ACTIONS.push(a); }
 
@@ -885,9 +895,6 @@ function showResultMenu(x, y, result){
   }, 50);
 }
 
-/* =========================================================
-   CSS ОТ ПЛАГИНОВ
-   ========================================================= */
 function injectCSS(css){
   const s = document.createElement('style');
   s.dataset.pluginStyle = '1';
@@ -896,9 +903,6 @@ function injectCSS(css){
   return () => s.remove();
 }
 
-/* =========================================================
-   СЕТЬ
-   ========================================================= */
 async function netFetch(url, opts){
   opts = opts || {};
   const finalUrl = opts.proxy ? (opts.proxy + encodeURIComponent(url)) : url;
@@ -909,9 +913,6 @@ async function netFetch(url, opts){
 async function netFetchJSON(url, opts){ return (await netFetch(url, opts)).json(); }
 async function netFetchText(url, opts){ return (await netFetch(url, opts)).text(); }
 
-/* =========================================================
-   ЗВУК
-   ========================================================= */
 function beep(freq, dur, type){
   try {
     const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -930,9 +931,6 @@ function beep(freq, dur, type){
   } catch (e) {}
 }
 
-/* =========================================================
-   РЕГИСТРАЦИЯ ПЛАГИНОВ
-   ========================================================= */
 const PL = {};
 const BUILTIN = new Set();
 const custom = LS.get('custom', {});
@@ -963,9 +961,6 @@ function registerPlugin(d, builtin){
   if (builtin) BUILTIN.add(d.id);
 }
 
-/* =========================================================
-   API ПЛАГИНА
-   ========================================================= */
 const api = id => {
   const store = makeStore(id);
   const cssList = [];
@@ -1018,7 +1013,7 @@ const api = id => {
 
     addPage(o){ o._pluginId = id; return addPage(o); },
     removePage: pid => removePage(pid),
-    openPage: pid => go(pid),
+    openPage: pid => openPluginView(pid),
     getCurrentPage: () => currentPage,
 
     store,
@@ -1085,9 +1080,6 @@ const api = id => {
   return apiObj;
 };
 
-/* =========================================================
-   ЗАГРУЗКА / ВЫГРУЗКА
-   ========================================================= */
 function applyDefaults(id){
   const p = PL[id];
   if (!p || !p.settings) return;
@@ -1140,7 +1132,6 @@ function unload(id){
   p._on = 0;
   PSUBS[id] = [];
 
-  /* Если этот плагин владел активной темой — сбрасываем */
   if (p.themes && p.themes.indexOf(S.pluginTheme) >= 0) {
     setTheme(null);
   }
@@ -1150,9 +1141,6 @@ function runCode(src){
   new Function('registerPlugin', src)(d => registerPlugin(d, false));
 }
 
-/* =========================================================
-   ВСТРОЕННЫЕ ПЛАГИНЫ
-   ========================================================= */
 registerPlugin({
   id: 'sci',
   name: 'Научный режим',
@@ -1246,7 +1234,114 @@ registerPlugin({
   }
 }, 1);
 
-/* ---------- загрузка кастомных ---------- */
+registerPlugin({
+  id: 'demo',
+  name: 'Демо API 3.0',
+  description: 'Показывает вкладки, store, ui, хуки, темы',
+  version: '1.0',
+  apiVersion: '3.0',
+  author: 'CalcX',
+  icon: 'D',
+  onLoad(a){
+    a.addPage({
+      id: 'demo-page',
+      title: 'Демо',
+      icon: '<path d="M12 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/>',
+      render: root => {
+        root.innerHTML = '';
+        root.append(UI.el('h2', { text: 'Демо API 3.0' }));
+
+        root.append(UI.card({
+          title: 'Счётчик в store',
+          hint: 'Значение хранится в изолированном хранилище',
+          content: (() => {
+            const wrap = UI.el('div');
+            const out = UI.el('b', { text: String(a.store.get('count', 0)) });
+            out.style.fontSize = '28px';
+            out.style.display = 'block';
+            out.style.margin = '12px 0';
+            out.style.color = 'var(--pr)';
+            wrap.append(out);
+            const inc = UI.button({
+              label: '+1',
+              onClick: () => {
+                const v = a.store.get('count', 0) + 1;
+                a.store.set('count', v);
+                out.textContent = String(v);
+                a.vibrate(15);
+              }
+            });
+            const rst = UI.button({
+              label: 'Сброс',
+              variant: 'tonal',
+              onClick: () => { a.store.set('count', 0); out.textContent = '0'; }
+            });
+            const row = UI.el('div', { class: 'row' });
+            row.style.gap = '8px';
+            row.append(inc, rst);
+            wrap.append(row);
+            return wrap;
+          })()
+        }));
+
+        root.append(UI.card({
+          title: 'UI-компоненты',
+          content: (() => {
+            const wrap = UI.el('div');
+            wrap.append(UI.toggle({
+              label: 'Переключатель',
+              value: true,
+              onChange: v => a.toast('Значение: ' + v)
+            }));
+            const sel = UI.select({
+              options: [
+                { value: 'a', label: 'А' },
+                { value: 'b', label: 'Б' },
+                { value: 'c', label: 'В' }
+              ],
+              value: 'a',
+              onChange: v => a.toast('Выбрано: ' + v)
+            });
+            sel.style.marginTop = '12px';
+            wrap.append(sel);
+            const b = UI.button({
+              label: 'Открыть модалку',
+              onClick: () => {
+                UI.modal({
+                  title: 'Привет',
+                  content: UI.el('div', { text: 'Это модальное окно из плагина.' }),
+                  actions: [
+                    { label: 'Отмена', variant: 'tonal' },
+                    { label: 'OK', variant: 'filled', onClick: () => a.toast('OK!') }
+                  ]
+                });
+              }
+            });
+            b.style.marginTop = '12px';
+            wrap.append(b);
+            return wrap;
+          })()
+        }));
+      }
+    });
+
+    a.on('calc:press', e => {
+      if (e.key === '=') a.log('нажато =', e.expr);
+    });
+
+    a.addResultAction({
+      label: 'Удвоить',
+      onClick: result => {
+        try {
+          const n = parseFloat(result.replace('−','-'));
+          if (!isNaN(n)) a.setExpr(String(n * 2));
+        } catch (e) {}
+      }
+    });
+  },
+  onUnload(){}
+}, 1);
+
 for (const id in custom) {
   try {
     const src = typeof custom[id] === 'string' ? custom[id] : custom[id]._src;
@@ -1256,9 +1351,6 @@ for (const id in custom) {
 enabled = enabled.filter(id => PL[id]);
 enabled.forEach(load);
 
-/* =========================================================
-   БЛОК АВТОРА
-   ========================================================= */
 function bindAuthorBlock(){
   const contactRow = $('#contact-row');
   if (contactRow && !contactRow._bound) {
@@ -1297,9 +1389,13 @@ function bindAuthorBlock(){
   }
 }
 
-/* =========================================================
-   СПИСОК ПЛАГИНОВ
-   ========================================================= */
+function updatePluginsCount(){
+  const el = $('#plugins-count');
+  if (!el) return;
+  const total = Object.keys(PL).length;
+  el.textContent = total + (total === 1 ? ' плагин' : ' плагинов');
+}
+
 function rPlug(){
   const l = $('#plist');
   if (!l) return;
@@ -1382,6 +1478,7 @@ function rPlug(){
         LS.set('en', enabled);
         LS.set('pvals', PVALS);
         rPlug();
+        updatePluginsCount();
       };
       c.append(d);
     }
@@ -1390,11 +1487,9 @@ function rPlug(){
   });
 
   bindAuthorBlock();
+  updatePluginsCount();
 }
 
-/* =========================================================
-   НАСТРОЙКИ ПЛАГИНА
-   ========================================================= */
 function buildSettings(pid, defs, root){
   const vals = getVals(pid);
   const set = (k, v) => {
@@ -1493,9 +1588,6 @@ function buildSettings(pid, defs, root){
   }
 }
 
-/* =========================================================
-   РЕДАКТОР ПЛАГИНОВ
-   ========================================================= */
 const TPL = [
 'registerPlugin({',
 "  id: 'myplugin',",
@@ -1511,6 +1603,15 @@ const TPL = [
 '      onClick: a => {',
 "        a.toast('Привет из плагина!');",
 "        a.vibrate(20);",
+'      }',
+'    });',
+'',
+'    api.addPage({',
+"      id: 'my-page',",
+"      title: 'Моя',",
+'      render: root => {',
+"        root.innerHTML = '';",
+"        root.append(api.ui.el('h2', { text: 'Моя страница' }));",
 '      }',
 '    });',
 '  },',
@@ -1575,12 +1676,19 @@ if (instBtn) instBtn.onclick = () => {
   const s = $('#sheet');
   if (s) s.classList.remove('on');
   rPlug();
+  updatePluginsCount();
   toast('Плагин установлен');
 };
 
-/* =========================================================
-   НАСТРОЙКИ ПРИЛОЖЕНИЯ
-   ========================================================= */
+const plugBack = $('#plug-back');
+if (plugBack) plugBack.onclick = () => go('set');
+
+const pvBack = $('#pv-back');
+if (pvBack) pvBack.onclick = () => go('more');
+
+const openPlugins = $('#open-plugins');
+if (openPlugins) openPlugins.onclick = () => go('plug');
+
 function seg(id, key, conv){
   const el = $('#' + id);
   if (!el) return;
@@ -1641,10 +1749,9 @@ if (avEl) avEl.textContent = 'API ' + API_VERSION;
 renderThemes();
 applyTheme();
 upd();
+rMorePages();
+updatePluginsCount();
 
-/* =========================================================
-   НАТИВНЫЙ РЕЖИМ
-   ========================================================= */
 (function(){
   const N = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.NativeTools;
   if (!N) return;
@@ -1663,5 +1770,16 @@ upd();
 
 window.addEventListener('online', () => emit('network', { online: true }));
 window.addEventListener('offline', () => emit('network', { online: false }));
+
+(async function requestPermissions(){
+  try {
+    const C = window.Capacitor;
+    if (!C || !C.Plugins || !C.Plugins.NativeTools) return;
+    const N = C.Plugins.NativeTools;
+    if (N.requestAudio) {
+      try { await N.requestAudio(); } catch (e) {}
+    }
+  } catch (e) {}
+})();
 
 })();
