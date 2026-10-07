@@ -1,463 +1,219 @@
-name: Build APK
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0a0e12">
+<meta name="color-scheme" content="light dark">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>CalcX</title>
+<link rel="stylesheet" href="style.css"></head><body>
+<div id="app">
+<main>
+ <section class="page on" id="p-calc"><div id="calc">
+  <div id="disp">
+   <div id="ex">0</div>
+   <div id="rs"></div>
+  </div>
+  <div id="extra"></div>
+  <div id="keys"></div>
+ </div></section>
 
-on:
-  workflow_dispatch:
-  push:
-    branches: [ main, master ]
+ <section class="page" id="p-hist">
+  <header class="page-head">
+   <h1>История</h1>
+  </header>
+  <div class="page-scroll">
+   <div class="page-content">
+    <div id="hist"></div>
+   </div>
+  </div>
+ </section>
 
-permissions:
-  contents: write
+ <section class="page" id="p-more">
+  <header class="page-head">
+   <h1>Дополнительно</h1>
+  </header>
+  <div class="page-scroll">
+   <div class="page-content">
+    <div id="pagelist"></div>
+   </div>
+  </div>
+ </section>
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+ <section class="page" id="p-set">
+  <header class="page-head">
+   <h1>Настройки</h1>
+  </header>
+  <div class="page-scroll">
+   <div class="page-content">
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
+    <div class="card">
+     <div class="card-head">
+      <svg viewBox="0 0 24 24" class="ic"><path d="M20.5 11H19V7a2 2 0 00-2-2h-4V3.5a2.5 2.5 0 00-5 0V5H4a2 2 0 00-2 2v3.8h1.5a2.7 2.7 0 010 5.4H2V20a2 2 0 002 2h3.8v-1.5a2.7 2.7 0 015.4 0V22H17a2 2 0 002-2v-4h1.5a2.5 2.5 0 000-5z"/></svg>
+      <b>Плагины</b>
+     </div>
+     <small class="card-hint">Расширения, темы и скрипты</small>
+     <div class="author-row" id="open-plugins">
+      <div class="author-grow">
+       <b>Открыть список плагинов</b>
+       <small id="plugins-count">—</small>
+      </div>
+      <svg viewBox="0 0 24 24" class="chev"><path d="M9 6l6 6-6 6"/></svg>
+     </div>
+    </div>
 
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
+    <div class="card">
+     <div class="card-head">
+      <svg viewBox="0 0 24 24" class="ic"><path d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 8a1 1 0 110 2 1 1 0 010-2zm-1-6h2v5h-2V5z"/></svg>
+      <b>Тема</b>
+     </div>
+     <div class="seg" id="mode">
+      <button data-v="auto">Системная</button>
+      <button data-v="light">Светлая</button>
+      <button data-v="dark">Тёмная</button>
+     </div>
+    </div>
 
-      - name: Capacitor project
-        run: |
-          npm init -y
-          npm i @capacitor/core@6 @capacitor/android@6
-          npm i -D @capacitor/cli@6
-          npx cap init CalcX com.gkk.calcx --web-dir=www
-          npx cap add android
+    <div class="card">
+     <div class="card-head">
+      <svg viewBox="0 0 24 24" class="ic"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4"/></svg>
+      <b>Цвет</b>
+     </div>
+     <small class="card-hint">Системный акцент или свой оттенок</small>
+     <div class="sws" id="sws"></div>
+    </div>
 
-      - name: Prepare web assets
-        run: |
-          ls -la www/
+    <div class="card">
+     <div class="card-head">
+      <svg viewBox="0 0 24 24" class="ic"><path d="M12 2l2 7 7 2-7 2-2 7-2-7-7-2 7-2z"/></svg>
+      <b>Тема плагина</b>
+     </div>
+     <small class="card-hint">Свои темы, установленные плагинами</small>
+     <div class="sws" id="plugin-themes"></div>
+    </div>
 
-      - name: Set app name to CalcX
-        run: |
-          python3 - <<'PY'
-          import os
-          p = 'android/app/src/main/res/values/strings.xml'
-          os.makedirs(os.path.dirname(p), exist_ok=True)
-          content = '''<?xml version="1.0" encoding="utf-8"?>
-          <resources>
-              <string name="app_name">CalcX</string>
-              <string name="title_activity_main">CalcX</string>
-              <string name="package_name">com.gkk.calcx</string>
-              <string name="custom_url_scheme">com.gkk.calcx</string>
-          </resources>
-          '''
-          open(p, 'w', encoding='utf-8').write(content)
-          print('strings.xml -> CalcX')
-          PY
+    <div class="card">
+     <div class="card-head">
+      <svg viewBox="0 0 24 24" class="ic"><path d="M17 7h-4V5a3 3 0 00-6 0v2H3v12a2 2 0 002 2h14a2 2 0 002-2V7h-4zM9 5a1 1 0 012 0v2H9V5z"/></svg>
+      <b>Вибро-отклик</b>
+     </div>
+     <div class="row">
+      <div class="grow"><small class="card-hint">Работает на Android</small></div>
+      <label class="sw"><input type="checkbox" id="vib"><i></i></label>
+     </div>
+     <div class="seg" id="pow">
+      <button data-v="0">Слабая</button>
+      <button data-v="1">Средняя</button>
+      <button data-v="2">Сильная</button>
+     </div>
+    </div>
 
-      - name: Generate app icons
-        run: |
-          python3 -m pip install --quiet pillow
-          python3 - <<'PY'
-          import os
-          from PIL import Image, ImageDraw
+    <div class="card">
+     <div class="card-head">
+      <svg viewBox="0 0 24 24" class="ic"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+      <b>Анимации</b>
+     </div>
+     <div class="row">
+      <div class="grow"><small class="card-hint">Плавные переходы интерфейса</small></div>
+      <label class="sw"><input type="checkbox" id="anim"><i></i></label>
+     </div>
+    </div>
 
-          src_candidates = ['assets/icon.png', 'icon.png', 'www/icon.png']
-          src = None
-          for c in src_candidates:
-              if os.path.exists(c) and os.path.getsize(c) > 100:
-                  src = c
-                  break
+    <div class="card">
+     <div class="card-head">
+      <svg viewBox="0 0 24 24" class="ic"><path d="M12 2l8 4v6c0 5-3.4 9.4-8 10-4.6-.6-8-5-8-10V6l8-4z"/></svg>
+      <b>Ядро плагинов</b>
+     </div>
+     <small class="card-hint" id="api-ver">API —</small>
+    </div>
 
-          if not src:
-              print('icon.png не найден — пропускаю')
-              raise SystemExit(0)
+   </div>
+  </div>
+ </section>
 
-          print(f'Источник иконки: {src} ({os.path.getsize(src)} байт)')
-          img = Image.open(src).convert('RGBA')
+ <section class="page" id="p-plug">
+  <header class="page-head">
+   <button class="back-btn" id="plug-back">
+    <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
+    Назад
+   </button>
+   <h1>Плагины</h1>
+  </header>
+  <div class="page-scroll">
+   <div class="page-content">
+    <div id="plist"></div>
+    <div class="btn-row">
+     <button class="btn filled grow" id="add">
+      <svg viewBox="0 0 24 24" class="ic"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      Вставить код
+     </button>
+     <label class="btn tonal grow" for="file">
+      <svg viewBox="0 0 24 24" class="ic"><path d="M20 6h-8l-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2z"/></svg>
+      Открыть .calc
+     </label>
+    </div>
+    <input type="file" id="file" hidden>
 
-          sizes = {
-              'mipmap-mdpi':    48,
-              'mipmap-hdpi':    72,
-              'mipmap-xhdpi':   96,
-              'mipmap-xxhdpi':  144,
-              'mipmap-xxxhdpi': 192,
-          }
+    <div class="author-card">
+     <div class="author-row" id="contact-row">
+      <div class="author-icon">
+       <svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+      </div>
+      <div class="author-grow">
+       <b>Связаться</b>
+       <small>@xcnak</small>
+      </div>
+      <svg viewBox="0 0 24 24" class="chev"><path d="M9 6l6 6-6 6"/></svg>
+     </div>
+     <div class="author-row" id="donate-row">
+      <div class="author-icon accent">
+       <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      </div>
+      <div class="author-grow">
+       <b>Поддержать</b>
+       <small>2202 2062 5415 2148</small>
+      </div>
+      <svg viewBox="0 0 24 24" class="chev"><path d="M9 6l6 6-6 6"/></svg>
+     </div>
+    </div>
+   </div>
+  </div>
+ </section>
 
-          base = 'android/app/src/main/res'
+ <section class="page" id="p-plugin-view">
+  <header class="page-head">
+   <button class="back-btn" id="pv-back">
+    <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
+    Назад
+   </button>
+   <h1 id="pv-title">—</h1>
+  </header>
+  <div class="page-scroll">
+   <div class="page-content" id="pv-content"></div>
+  </div>
+ </section>
+</main>
 
-          for folder, size in sizes.items():
-              d = os.path.join(base, folder)
-              os.makedirs(d, exist_ok=True)
+<nav id="nav"></nav>
+</div>
 
-              sq = Image.new('RGBA', (size, size), (59, 44, 0, 255))
-              resized = img.copy()
-              resized.thumbnail((int(size*0.85), int(size*0.85)), Image.LANCZOS)
-              offset = ((size - resized.width)//2, (size - resized.height)//2)
-              sq.paste(resized, offset, resized)
-              sq.save(os.path.join(d, 'ic_launcher.png'))
+<div id="plugin-modals"></div>
+<div id="plugin-overlays"></div>
+<div id="plugin-notifications"></div>
 
-              round_img = Image.new('RGBA', (size, size), (0,0,0,0))
-              mask = Image.new('L', (size, size), 0)
-              ImageDraw.Draw(mask).ellipse((0, 0, size, size), fill=255)
-              round_img.paste(sq, (0,0), mask)
-              round_img.save(os.path.join(d, 'ic_launcher_round.png'))
+<div id="sheet">
+ <div class="sheet-inner">
+  <div class="sheet-handle"></div>
+  <h1>Новый плагин</h1>
+  <small class="sheet-hint">Код плагина — это JavaScript. Ставьте только то, чему доверяете.</small>
+  <textarea id="code" spellcheck="false"></textarea>
+  <div class="btn-row">
+   <button class="btn tonal grow" id="cancel">Отмена</button>
+   <button class="btn filled grow" id="inst">Установить</button>
+  </div>
+ </div>
+</div>
 
-              fg_size = int(size * 1.5)
-              fg = Image.new('RGBA', (fg_size, fg_size), (0,0,0,0))
-              fg_resized = img.copy()
-              fg_resized.thumbnail((int(size*0.7), int(size*0.7)), Image.LANCZOS)
-              fg_offset = ((fg_size - fg_resized.width)//2, (fg_size - fg_resized.height)//2)
-              fg.paste(fg_resized, fg_offset, fg_resized)
-              fg.save(os.path.join(d, 'ic_launcher_foreground.png'))
-
-          print('Иконки сгенерированы')
-          PY
-
-      - name: Native code
-        run: |
-          D=android/app/src/main/java/com/gkk/calcx
-          mkdir -p $D
-
-          cat > $D/NativeTools.java <<'EOF'
-          package com.gkk.calcx;
-
-          import android.Manifest;
-          import android.content.Context;
-          import android.content.pm.PackageManager;
-          import android.os.Build;
-          import android.os.VibrationEffect;
-          import android.os.Vibrator;
-          import com.getcapacitor.JSArray;
-          import com.getcapacitor.JSObject;
-          import com.getcapacitor.Plugin;
-          import com.getcapacitor.PluginCall;
-          import com.getcapacitor.PluginMethod;
-          import com.getcapacitor.annotation.CapacitorPlugin;
-          import com.getcapacitor.annotation.Permission;
-          import com.getcapacitor.annotation.PermissionCallback;
-
-          @CapacitorPlugin(
-            name = "NativeTools",
-            permissions = {
-              @Permission(
-                alias = "microphone",
-                strings = { Manifest.permission.RECORD_AUDIO }
-              )
-            }
-          )
-          public class NativeTools extends Plugin {
-            public static String pendingText = null;
-            public static String pendingName = "";
-
-            @SuppressWarnings("deprecation")
-            @PluginMethod
-            public void vibrate(PluginCall call) {
-              try {
-                Vibrator v = (Vibrator) getContext().getSystemService(Context.VIBRATOR_SERVICE);
-                if (v == null || !v.hasVibrator()) { call.resolve(); return; }
-                JSArray arr = call.getArray("pattern");
-                if (arr != null && arr.length() > 0) {
-                  long[] t = new long[arr.length() + 1];
-                  t[0] = 0;
-                  for (int i = 0; i < arr.length(); i++) t[i + 1] = Math.max(0, arr.getLong(i));
-                  if (Build.VERSION.SDK_INT >= 26) v.vibrate(VibrationEffect.createWaveform(t, -1));
-                  else v.vibrate(t, -1);
-                } else {
-                  long d = Math.max(15, Math.min(500, call.getInt("duration", 20)));
-                  if (Build.VERSION.SDK_INT >= 26) v.vibrate(VibrationEffect.createOneShot(d, VibrationEffect.DEFAULT_AMPLITUDE));
-                  else v.vibrate(d);
-                }
-                call.resolve();
-              } catch (Exception e) {
-                call.reject(String.valueOf(e.getMessage()));
-              }
-            }
-
-            @PluginMethod
-            public void getColors(PluginCall call) {
-              if (Build.VERSION.SDK_INT < 31) { call.reject("Android 12+ required"); return; }
-              JSObject o = new JSObject();
-              String[][] sets = {
-                {"a1", "system_accent1_"}, {"a2", "system_accent2_"}, {"a3", "system_accent3_"},
-                {"n1", "system_neutral1_"}, {"n2", "system_neutral2_"}
-              };
-              int[] tones = {0, 10, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000};
-              for (String[] s : sets) {
-                for (int t : tones) {
-                  int id = getContext().getResources().getIdentifier(s[1] + t, "color", "android");
-                  if (id != 0) {
-                    int c = getContext().getResources().getColor(id, getContext().getTheme());
-                    o.put(s[0] + "_" + t, String.format("#%06X", 0xFFFFFF & c));
-                  }
-                }
-              }
-              call.resolve(o);
-            }
-
-            @PluginMethod
-            public void getPending(PluginCall call) {
-              JSObject o = new JSObject();
-              if (pendingText != null) {
-                o.put("text", pendingText);
-                o.put("name", pendingName);
-                pendingText = null;
-              }
-              call.resolve(o);
-            }
-
-            @PluginMethod
-            public void requestAudio(PluginCall call) {
-              if (Build.VERSION.SDK_INT >= 23 &&
-                  getContext().checkSelfPermission(Manifest.permission.RECORD_AUDIO)
-                    != PackageManager.PERMISSION_GRANTED) {
-                requestPermissionForAlias("microphone", call, "audioCallback");
-              } else {
-                call.resolve();
-              }
-            }
-
-            @PermissionCallback
-            private void audioCallback(PluginCall call) {
-              call.resolve();
-            }
-          }
-          EOF
-
-          cat > $D/MainActivity.java <<'EOF'
-          package com.gkk.calcx;
-
-          import android.content.Intent;
-          import android.graphics.Color;
-          import android.net.Uri;
-          import android.os.Build;
-          import android.os.Bundle;
-          import android.view.View;
-          import android.view.Window;
-          import android.view.WindowManager;
-          import com.getcapacitor.BridgeActivity;
-          import java.io.ByteArrayOutputStream;
-          import java.io.InputStream;
-          import org.json.JSONObject;
-
-          public class MainActivity extends BridgeActivity {
-            @Override
-            public void onCreate(Bundle savedInstanceState) {
-              registerPlugin(NativeTools.class);
-              super.onCreate(savedInstanceState);
-
-              Window w = getWindow();
-              w.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-              w.setStatusBarColor(Color.TRANSPARENT);
-              w.setNavigationBarColor(Color.TRANSPARENT);
-
-              int ui = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                     | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                     | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
-
-              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                w.setNavigationBarContrastEnforced(false);
-                w.setStatusBarContrastEnforced(false);
-              }
-
-              w.getDecorView().setSystemUiVisibility(ui);
-
-              handle(getIntent(), false);
-            }
-
-            @Override
-            public void onWindowFocusChanged(boolean hasFocus) {
-              super.onWindowFocusChanged(hasFocus);
-              if (hasFocus) {
-                getWindow().getDecorView().setSystemUiVisibility(
-                  View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
-                  View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
-                  View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                );
-              }
-            }
-
-            @Override
-            protected void onNewIntent(Intent intent) {
-              super.onNewIntent(intent);
-              handle(intent, true);
-            }
-
-            @SuppressWarnings("deprecation")
-            private void handle(Intent i, boolean live) {
-              if (i == null) return;
-              String action = i.getAction();
-              String text = null;
-              String name = "";
-              try {
-                if (Intent.ACTION_VIEW.equals(action) && i.getData() != null) {
-                  Uri u = i.getData();
-                  text = read(u);
-                  name = String.valueOf(u.getLastPathSegment());
-                } else if (Intent.ACTION_SEND.equals(action)) {
-                  Uri u = (Uri) i.getParcelableExtra(Intent.EXTRA_STREAM);
-                  if (u != null) {
-                    text = read(u);
-                    name = String.valueOf(u.getLastPathSegment());
-                  } else {
-                    text = i.getStringExtra(Intent.EXTRA_TEXT);
-                  }
-                }
-              } catch (Exception e) {
-                return;
-              }
-              if (text == null || text.isEmpty()) return;
-              NativeTools.pendingText = text;
-              NativeTools.pendingName = name;
-              if (live && getBridge() != null && getBridge().getWebView() != null) {
-                final String js = "window.openCalcText&&window.openCalcText("
-                  + JSONObject.quote(text) + "," + JSONObject.quote(name) + ")";
-                getBridge().getWebView().post(new Runnable() {
-                  public void run() { getBridge().getWebView().evaluateJavascript(js, null); }
-                });
-                NativeTools.pendingText = null;
-              }
-            }
-
-            private String read(Uri u) throws Exception {
-              InputStream in = getContentResolver().openInputStream(u);
-              ByteArrayOutputStream out = new ByteArrayOutputStream();
-              byte[] b = new byte[4096];
-              int n, total = 0;
-              while ((n = in.read(b)) > 0) {
-                out.write(b, 0, n);
-                total += n;
-                if (total > 300000) break;
-              }
-              in.close();
-              return out.toString("UTF-8");
-            }
-          }
-          EOF
-
-      - name: Patch styles.xml
-        run: |
-          python3 - <<'PY'
-          import os, re
-
-          styles = 'android/app/src/main/res/values/styles.xml'
-
-          if not os.path.exists(styles):
-              os.makedirs(os.path.dirname(styles), exist_ok=True)
-              content = '''<?xml version="1.0" encoding="utf-8"?>
-          <resources>
-              <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
-                  <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
-                  <item name="android:statusBarColor">@android:color/transparent</item>
-                  <item name="android:navigationBarColor">@android:color/transparent</item>
-              </style>
-              <style name="AppTheme.NoActionBar" parent="AppTheme">
-                  <item name="windowActionBar">false</item>
-                  <item name="windowNoTitle">true</item>
-              </style>
-              <style name="AppTheme.NoActionBarLaunch" parent="AppTheme.NoActionBar">
-                  <item name="android:background">@drawable/splash</item>
-              </style>
-          </resources>
-          '''
-              open(styles, 'w', encoding='utf-8').write(content)
-              print('styles.xml создан с нуля')
-          else:
-              s = open(styles, encoding='utf-8').read()
-
-              additions = (
-                  '        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>\n'
-                  '        <item name="android:statusBarColor">@android:color/transparent</item>\n'
-                  '        <item name="android:navigationBarColor">@android:color/transparent</item>\n'
-              )
-
-              pattern = r'(<style name="AppTheme"[^>]*>)(.*?)(</style>)'
-
-              def repl(m):
-                  head, body, tail = m.groups()
-                  if 'windowLayoutInDisplayCutoutMode' in body:
-                      return m.group(0)
-                  return head + '\n' + body.rstrip() + '\n' + additions + tail
-
-              s2, n = re.subn(pattern, repl, s, count=1, flags=re.DOTALL)
-
-              if n == 0:
-                  s2 = s.replace('</resources>',
-                      '    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">\n'
-                      + additions + '    </style>\n</resources>')
-
-              open(styles, 'w', encoding='utf-8').write(s2)
-              print(f'styles.xml обновлён ({n})')
-          PY
-
-      - name: Patch AndroidManifest
-        run: |
-          python3 - <<'PY'
-          p = 'android/app/src/main/AndroidManifest.xml'
-          s = open(p, encoding='utf-8').read()
-
-          perms = ''
-          if 'android.permission.VIBRATE' not in s:
-              perms += '    <uses-permission android:name="android.permission.VIBRATE"/>\n'
-          if 'android.permission.CAMERA' not in s:
-              perms += '    <uses-permission android:name="android.permission.CAMERA"/>\n'
-          if 'android.permission.RECORD_AUDIO' not in s:
-              perms += '    <uses-permission android:name="android.permission.RECORD_AUDIO"/>\n'
-          if 'android.permission.INTERNET' not in s:
-              perms += '    <uses-permission android:name="android.permission.INTERNET"/>\n'
-          if 'android.permission.ACCESS_NETWORK_STATE' not in s:
-              perms += '    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>\n'
-          if perms:
-              s = s.replace('</manifest>', perms + '</manifest>')
-
-          filters = r'''
-              <intent-filter>
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="content"/>
-                <data android:scheme="file"/>
-                <data android:mimeType="text/plain"/>
-              </intent-filter>
-              <intent-filter>
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="content" android:host="*" android:mimeType="*/*" android:pathPattern=".*\\.calc"/>
-                <data android:scheme="file" android:host="*" android:mimeType="*/*" android:pathPattern=".*\\.calc"/>
-              </intent-filter>
-              <intent-filter>
-                <action android:name="android.intent.action.SEND"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <data android:mimeType="text/plain"/>
-              </intent-filter>
-          '''
-          if 'android.intent.action.VIEW' not in s:
-              assert '</activity>' in s
-              s = s.replace('</activity>', filters + '</activity>', 1)
-
-          if 'android:configChanges' not in s:
-              s = s.replace(
-                'android:name=".MainActivity"',
-                'android:name=".MainActivity"\n            android:configChanges="orientation|screenSize|keyboardHidden|uiMode"'
-              )
-
-          open(p, 'w', encoding='utf-8').write(s)
-          print('AndroidManifest пропатчен')
-          PY
-
-      - name: Sync and build
-        run: |
-          npx cap sync android
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: CalcX-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-
-      - uses: softprops/action-gh-release@v2
-        with:
-          tag_name: build-${{ github.run_number }}
-          name: CalcX build ${{ github.run_number }}
-          files: android/app/build/outputs/apk/debug/app-debug.apk
+<div id="toast"></div>
+<script src="app.js"></script></body></html>
