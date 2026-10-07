@@ -122,6 +122,30 @@ main{
 
 h1{font-size:28px;font-weight:400;margin:8px 4px 16px;letter-spacing:-.3px}
 
+.back-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  border:0;
+  background:none;
+  color:var(--tx2);
+  font-size:14px;
+  font-weight:500;
+  padding:6px 0;
+  cursor:pointer;
+  margin-bottom:6px;
+}
+.back-btn svg{
+  width:18px;
+  height:18px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2.5;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.back-btn:active{opacity:.6}
+
 #calc{
   display:flex;
   flex-direction:column;
@@ -467,6 +491,9 @@ nav::-webkit-scrollbar{display:none}
 .hi small{font-size:14px;color:var(--tx2);letter-spacing:-.2px}
 .hi b{font-size:24px;font-weight:400;display:block;margin-top:2px;letter-spacing:-.5px}
 
+#pagelist .hi b{font-size:16px;font-weight:600;letter-spacing:-.1px}
+#pagelist .hi small{font-size:13px;color:var(--tx2)}
+
 .empty{
   text-align:center;
   color:var(--tx2);
@@ -700,6 +727,12 @@ button{touch-action:manipulation;font:inherit}
   position:relative;
 }
 
+#open-plugins{
+  border-top:none;
+  padding:12px 0 4px;
+}
+#open-plugins .author-grow b{font-size:14px}
+
 .modal-back{
   position:fixed;
   inset:0;
@@ -809,6 +842,10 @@ button{touch-action:manipulation;font:inherit}
   transition:background .15s;
 }
 .ctx-menu button:active{background:var(--sc)}
+
+#p-more .page-head h1,
+#p-plug .page-head h1,
+#p-plugin-view .page-head h1{font-size:28px}
 
 @media (orientation:landscape) and (max-height:520px){
   #calc{
