@@ -929,6 +929,33 @@ function beep(freq, dur, type){
   } catch (e) {}
 }
 
+function nativeTools(){
+  return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.NativeTools;
+}
+
+const SPEECH = {
+  isAvailable: async () => {
+    try {
+      const N = nativeTools();
+      if (!N || !N.isSpeechAvailable) return false;
+      const r = await N.isSpeechAvailable();
+      return !!(r && r.available);
+    } catch (e) { return false; }
+  },
+  listen: async (opts) => {
+    const N = nativeTools();
+    if (!N || !N.listen) throw new Error('Распознавание речи недоступно');
+    const r = await N.listen({ lang: (opts && opts.lang) || 'ru-RU' });
+    return (r && r.text) || '';
+  },
+  stop: async () => {
+    const N = nativeTools();
+    if (N && N.stopListening) {
+      try { await N.stopListening(); } catch (e) {}
+    }
+  }
+};
+
 const PL = {};
 const BUILTIN = new Set();
 const custom = LS.get('custom', {});
@@ -1040,6 +1067,8 @@ const api = id => {
     emit(event, data){ emit(event, data); },
 
     ui: UI,
+
+    speech: SPEECH,
 
     injectCSS(css){
       const unsub = injectCSS(css);
