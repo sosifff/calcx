@@ -90,21 +90,21 @@ jobs:
 
               sq = Image.new('RGBA', (size, size), (59, 44, 0, 255))
               resized = img.copy()
-              resized.thumbnail((int(size*0.85), int(size*0.85)), Image.LANCZOS)
+              resized.thumbnail((size, size), Image.LANCZOS)
               offset = ((size - resized.width)//2, (size - resized.height)//2)
               sq.paste(resized, offset, resized)
               sq.save(os.path.join(d, 'ic_launcher.png'))
 
-              round_img = Image.new('RGBA', (size, size), (0,0,0,0))
+              round_img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
               mask = Image.new('L', (size, size), 0)
               ImageDraw.Draw(mask).ellipse((0, 0, size, size), fill=255)
-              round_img.paste(sq, (0,0), mask)
+              round_img.paste(sq, (0, 0), mask)
               round_img.save(os.path.join(d, 'ic_launcher_round.png'))
 
               fg_size = int(size * 1.5)
-              fg = Image.new('RGBA', (fg_size, fg_size), (0,0,0,0))
+              fg = Image.new('RGBA', (fg_size, fg_size), (0, 0, 0, 0))
               fg_resized = img.copy()
-              fg_resized.thumbnail((int(size*0.7), int(size*0.7)), Image.LANCZOS)
+              fg_resized.thumbnail((size, size), Image.LANCZOS)
               fg_offset = ((fg_size - fg_resized.width)//2, (fg_size - fg_resized.height)//2)
               fg.paste(fg_resized, fg_offset, fg_resized)
               fg.save(os.path.join(d, 'ic_launcher_foreground.png'))
@@ -380,7 +380,6 @@ jobs:
           import android.view.View;
           import android.view.Window;
           import android.view.WindowManager;
-          import android.webkit.PermissionRequest;
           import androidx.core.app.ActivityCompat;
           import androidx.core.content.ContextCompat;
           import com.getcapacitor.BridgeActivity;
@@ -431,16 +430,6 @@ jobs:
                 if (needCam) list.add(Manifest.permission.CAMERA);
                 ActivityCompat.requestPermissions(this, list.toArray(new String[0]), REQ_PERMS);
               }
-            }
-
-            @Override
-            public void onPermissionRequest(final PermissionRequest request) {
-              runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                  request.grant(request.getResources());
-                }
-              });
             }
 
             @Override
