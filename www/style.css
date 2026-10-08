@@ -350,3 +350,420 @@ textarea{
   .k.op{font-size:31px}
   .k.eq{font-size:33px}
 }
+
+
+
+/* ============================================================
+   CalcX Material You — dynamic theme layer
+   IMPORTANT: all visual colors below derive from CalcX theme vars.
+   This makes hue, light/dark mode and plugin themes actually visible.
+   ============================================================ */
+
+:root{
+  --calcx-surface-1: color-mix(in srgb, var(--sf) 94%, var(--bg));
+  --calcx-surface-2: color-mix(in srgb, var(--sf) 82%, var(--sc));
+  --calcx-surface-3: color-mix(in srgb, var(--sc) 88%, var(--sf));
+  --calcx-accent-soft: color-mix(in srgb, var(--pc) 76%, var(--bg));
+  --calcx-accent-strong: color-mix(in srgb, var(--pr) 88%, var(--bg));
+  --calcx-outline: color-mix(in srgb, var(--ol) 62%, var(--outline-variant));
+  --calcx-shadow: color-mix(in srgb, var(--tx) 16%, transparent);
+  --calcx-shadow-strong: color-mix(in srgb, var(--tx) 24%, transparent);
+}
+
+html,body{
+  background:
+    radial-gradient(900px 520px at 100% -12%,
+      color-mix(in srgb, var(--pr) 18%, transparent), transparent 66%),
+    radial-gradient(760px 460px at -12% 30%,
+      color-mix(in srgb, var(--tc) 20%, transparent), transparent 66%),
+    var(--bg);
+  color:var(--tx);
+  transition:
+    background .45s cubic-bezier(.2,.9,.3,1),
+    color .35s ease;
+}
+
+#app{
+  background:
+    radial-gradient(700px 420px at 50% 100%,
+      color-mix(in srgb, var(--pc) 10%, transparent), transparent 72%);
+}
+
+.page-head{
+  background:color-mix(in srgb, var(--bg) 84%, transparent);
+  border-bottom:1px solid color-mix(in srgb, var(--outline-variant) 55%, transparent);
+  backdrop-filter:blur(22px) saturate(140%);
+  -webkit-backdrop-filter:blur(22px) saturate(140%);
+}
+
+.page-head h1,
+h1{
+  font-family:system-ui,-apple-system,"Roboto","Segoe UI",sans-serif;
+  color:var(--tx);
+  font-weight:750;
+  letter-spacing:-.8px;
+}
+
+/* Calculator display */
+#disp{
+  margin:10px 14px 5px;
+  padding:22px 20px 17px;
+  border:1px solid color-mix(in srgb, var(--outline-variant) 72%, var(--ol));
+  border-radius:30px;
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--sf) 98%, var(--bg)),
+      color-mix(in srgb, var(--sc) 54%, var(--sf))
+    );
+  box-shadow:
+    0 14px 36px color-mix(in srgb, var(--tx) 9%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--onpr) 65%, transparent);
+}
+
+#ex{
+  color:var(--tx);
+  font-weight:350;
+  letter-spacing:-1.8px;
+}
+
+#rs{
+  color:var(--tx2);
+}
+
+/* Extra calculator chips */
+#extra{
+  padding-left:14px;
+  padding-right:14px;
+  gap:8px;
+}
+
+.k.chip{
+  height:40px;
+  padding:0 17px;
+  border-radius:20px;
+  background:var(--calcx-accent-soft);
+  color:var(--onpc);
+  border:1px solid color-mix(in srgb, var(--outline-variant) 55%, transparent);
+  box-shadow:0 3px 10px color-mix(in srgb, var(--tx) 7%, transparent);
+}
+
+/* Calculator buttons */
+#keys{
+  gap:9px;
+  padding:8px 14px 18px;
+}
+
+.k{
+  border:1px solid color-mix(in srgb, var(--outline-variant) 72%, transparent);
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--sf) 98%, var(--onpr)),
+      color-mix(in srgb, var(--sc) 86%, var(--sf))
+    );
+  color:var(--tx);
+  box-shadow:
+    0 5px 13px color-mix(in srgb, var(--tx) 8%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--onpr) 70%, transparent);
+}
+
+.k:active{
+  transform:scale(.91);
+  box-shadow:
+    0 2px 6px color-mix(in srgb, var(--tx) 8%, transparent),
+    inset 0 1px 2px color-mix(in srgb, var(--tx) 7%, transparent);
+}
+
+.k.op{
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--pc) 95%, var(--sf)),
+      color-mix(in srgb, var(--pc) 70%, var(--sc))
+    );
+  color:var(--onpc);
+  box-shadow:
+    0 6px 15px color-mix(in srgb, var(--pr) 13%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--onpr) 45%, transparent);
+}
+
+.k.fn{
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--tc) 96%, var(--sf)),
+      color-mix(in srgb, var(--tc) 70%, var(--sc))
+    );
+  color:var(--ontc);
+}
+
+.k.eq{
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--pr) 88%, var(--onpr)),
+      color-mix(in srgb, var(--pr) 100%, var(--tx))
+    );
+  color:var(--onpr);
+  box-shadow:
+    0 8px 20px color-mix(in srgb, var(--pr) 28%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--onpr) 35%, transparent);
+}
+
+/* Bottom navigation */
+nav{
+  margin-left:10px;
+  margin-right:10px;
+  border:1px solid color-mix(in srgb, var(--outline-variant) 70%, transparent);
+  background:
+    color-mix(in srgb, var(--sf) 88%, transparent);
+  box-shadow:
+    0 10px 30px color-mix(in srgb, var(--tx) 11%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--onpr) 55%, transparent);
+  backdrop-filter:blur(24px) saturate(145%);
+  -webkit-backdrop-filter:blur(24px) saturate(145%);
+}
+
+.tab{
+  color:var(--tx2);
+}
+
+.tab.on{
+  color:var(--tx);
+}
+
+.tab.on i{
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--pc) 92%, var(--sf)),
+      color-mix(in srgb, var(--pc) 72%, var(--sc))
+    );
+  color:var(--onpc);
+}
+
+/* Cards / history / plugin cards */
+.card,
+.author-card{
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--sf) 93%, transparent),
+      color-mix(in srgb, var(--sf) 79%, var(--sc))
+    );
+  border:1px solid color-mix(in srgb, var(--outline-variant) 70%, var(--ol));
+  box-shadow:
+    0 8px 24px color-mix(in srgb, var(--tx) 7%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--onpr) 55%, transparent);
+  backdrop-filter:blur(16px) saturate(125%);
+  -webkit-backdrop-filter:blur(16px) saturate(125%);
+}
+
+.card{
+  transition:
+    transform .22s cubic-bezier(.2,.9,.3,1),
+    box-shadow .22s ease,
+    background .3s ease;
+}
+
+.card:active{
+  transform:scale(.99);
+}
+
+.card-head .ic{
+  color:var(--pr);
+  fill:var(--pr);
+}
+
+.author-icon{
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--pc) 95%, var(--sf)),
+      color-mix(in srgb, var(--pc) 72%, var(--sc))
+    );
+  color:var(--onpc);
+  box-shadow:0 4px 12px color-mix(in srgb, var(--pr) 12%, transparent);
+}
+
+.author-icon.accent{
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--pr) 88%, var(--onpr)),
+      var(--pr)
+    );
+  color:var(--onpr);
+}
+
+/* Make sure plugin icons can never become huge */
+.author-icon svg{
+  width:22px !important;
+  height:22px !important;
+  max-width:22px !important;
+  max-height:22px !important;
+  display:block;
+}
+
+.card-head .ic{
+  width:20px !important;
+  height:20px !important;
+  max-width:20px;
+  max-height:20px;
+}
+
+/* Settings controls */
+.sw i{
+  background:var(--sc);
+  border-color:var(--ol);
+}
+
+.sw i::after{
+  background:var(--tx2);
+}
+
+.sw input:checked+i{
+  background:var(--pr);
+  border-color:var(--pr);
+}
+
+.seg{
+  background:var(--sf);
+  border-color:var(--ol);
+}
+
+.seg button{
+  color:var(--tx);
+}
+
+.seg button.on{
+  background:var(--pc);
+  color:var(--onpc);
+}
+
+.sws button.on{
+  border-color:var(--pr);
+}
+
+.btn{
+  border:1px solid color-mix(in srgb, var(--outline-variant) 70%, transparent);
+  box-shadow:0 5px 13px color-mix(in srgb, var(--tx) 7%, transparent);
+}
+
+.btn.filled{
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--pr) 88%, var(--onpr)),
+      var(--pr)
+    );
+  color:var(--onpr);
+  box-shadow:0 7px 17px color-mix(in srgb, var(--pr) 22%, transparent);
+}
+
+.btn.tonal{
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--pc) 95%, var(--sf)),
+      color-mix(in srgb, var(--pc) 72%, var(--sc))
+    );
+  color:var(--onpc);
+}
+
+/* Inputs */
+.set-row input[type=text],
+.set-row input[type=number],
+.set-row textarea,
+textarea{
+  background:color-mix(in srgb, var(--sf) 94%, var(--bg));
+  color:var(--tx);
+  border-color:var(--ol);
+  box-shadow:
+    inset 0 1px 3px color-mix(in srgb, var(--tx) 5%, transparent);
+}
+
+.set-row input[type=text]:focus,
+.set-row input[type=number]:focus,
+.set-row textarea:focus,
+textarea:focus{
+  border-color:var(--pr);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--pr) 15%, transparent);
+}
+
+/* Bottom sheet / dialogs */
+#sheet{
+  background:color-mix(in srgb, var(--tx) 35%, transparent);
+}
+
+#sheet>div{
+  background:var(--bg);
+  box-shadow:
+    0 -14px 42px color-mix(in srgb, var(--tx) 18%, transparent);
+}
+
+.modal-back{
+  background:color-mix(in srgb, var(--tx) 35%, transparent);
+}
+
+.modal,
+.ctx-menu{
+  background:var(--sf);
+  color:var(--tx);
+  border-color:color-mix(in srgb, var(--outline-variant) 72%, var(--ol));
+  box-shadow:
+    0 18px 55px color-mix(in srgb, var(--tx) 20%, transparent);
+}
+
+/* Toast and notifications */
+#toast{
+  background:var(--tx);
+  color:var(--bg);
+  box-shadow:0 9px 28px color-mix(in srgb, var(--tx) 24%, transparent);
+}
+
+.notif{
+  background:var(--sf);
+  color:var(--tx);
+  border-color:var(--outline-variant);
+  box-shadow:0 9px 30px color-mix(in srgb, var(--tx) 15%, transparent);
+}
+
+/* Plugin/theme swatches */
+.sws button{
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--tx) 10%, transparent);
+}
+
+.sws button.on{
+  box-shadow:
+    0 0 0 3px var(--bg),
+    0 0 0 5px var(--pr);
+}
+
+/* Focus uses the active Material You accent */
+:focus-visible{
+  outline:3px solid color-mix(in srgb, var(--pr) 42%, transparent);
+  outline-offset:3px;
+}
+
+/* Small phones */
+@media (max-width:380px){
+  #disp{
+    margin:6px 10px 2px;
+    padding:17px;
+    border-radius:26px;
+  }
+
+  #keys{
+    gap:7px;
+    padding-left:10px;
+    padding-right:10px;
+  }
+
+  .k{font-size:27px}
+  .k.op{font-size:31px}
+  .k.eq{font-size:33px}
+}
