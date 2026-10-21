@@ -7,6 +7,9 @@ app.whenReady().then(() => {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
   win.loadFile(app.isPackaged ? path.join(process.resourcesPath, 'www', 'index.html') : path.join(__dirname, '..', 'www', 'index.html'));
+  win.webContents.on('did-finish-load', () => {
+    win.webContents.insertCSS(require('fs').readFileSync(path.join(__dirname, 'desktop.css'), 'utf8'));
+  });
   win.webContents.setWindowOpenHandler(({url}) => {
     if (/^https:\/\//i.test(url)) shell.openExternal(url);
     return {action:'deny'};
