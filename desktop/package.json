@@ -20,7 +20,8 @@
     },
     "files": [
       "main.js",
-      "preload.js"
+      "preload.js",
+      "desktop.css"
     ],
     "extraMetadata": {
       "main": "main.js"
